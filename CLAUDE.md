@@ -113,9 +113,23 @@ VTM OS 가 `PERMISSION_DENIED` 를 내면:
 7. **사업방향 임의 변경 금지.** 방향은 본부장과 김서윤이 정한다.
 8. **크레딧 소모 확인.** 영상·이미지 생성은 유료다. 대량 생성 전 잔액을 확인한다.
 
+## 전 직원 공통 실행 규칙
+
+모든 AI 직원의 실행 지휘 책임자는 **서지윤 실장** 으로 통일한다 — `docs/employee-rules.md`.
+
+- 직원의 공식 실행 근거는 **서지윤이 전달한 Work Order** 하나다.
+  본부장·김서윤의 기획·회의·초안 문서를 보고 직원이 임의로 시작하지 않는다.
+- 직원은 결과를 서지윤에게 반환하고, `COMPLETE` / `BLOCKED` / `REWORK` 상태와
+  근거를 남긴다. 서지윤이 완료기준 항목 단위로 검수해 종결한다.
+- `PERMISSION_DENIED` 는 직원이 우회하지 않고 서지윤에게 반환한다.
+- **서지윤도 Work Order 없이 직원을 움직이지 않는다.** 기획 초안을 그대로 넘기지 않고
+  목표·완료기준·제약이 담긴 Work Order 로 변환해 전달한다.
+
+기존 직원 운영문서·런타임 규칙과 충돌하면 **이 공지가 우선한다.**
+
 ## 개발 업무
 
-개발 업무는 별도의 지휘 체계와 완료 기준을 따른다 — `docs/dev-execution.md`.
+개발 업무는 공통 규칙 위에 추가 기준을 따른다 — `docs/dev-execution.md`.
 
 - 개발자의 유일한 공식 실행 근거는 **서지윤 실장이 전달한 Work Order** 다.
   김서윤의 초안·아이디어 문서를 보고 개발자가 임의로 시작하지 않는다.
@@ -127,7 +141,8 @@ VTM OS 가 `PERMISSION_DENIED` 를 내면:
 ## 참고
 
 - 실행 프로토콜: `.claude/skills/vtm-orchestrator/SKILL.md`
-- 개발 지휘 체계 · 완료 기준: `docs/dev-execution.md`
+- 전 직원 공통 실행 규칙: `docs/employee-rules.md`
+- 개발 직군 추가 기준: `docs/dev-execution.md`
 - Executive Report 양식: `docs/executive-report.md`
 - 종결 판정 기준: `docs/closure-policy.md`
 - 라우팅 표: `docs/routing.md` — **HOLD.** 새 사업방향 확정 전까지 사용·재작성하지 않는다.
