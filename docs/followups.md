@@ -9,7 +9,8 @@
 
 **등록일** 2026-08-20
 **등록 근거** 본부장 지시 — Telegram Push v1A 처리 중 확정
-**상태** 등록됨 · 서윤 비서실장 SSOT 대기
+**상태** B-1 구현·테스트 완료 (`vtm-os-next` `claude/session-claim-recovery` `1497991`) ·
+B-2 credential HUMAN_GATE 유지
 **우선순위** 필수 (교차 저장소 업무가 반복될 때마다 서지윤 수동 실행이 필요해진다)
 
 ### 왜 필요한가 — 실측된 결함
@@ -51,13 +52,42 @@ scripts/pipeline/queue-wake-dispatch.mjs:531
 - 워커 워크플로에 다른 저장소 checkout/push 자격을 부여하는 것은 권한 확대다.
   본부장 승인 없이 진행하지 않는다.
 
+### B-1 결과 (2026-08-21 · 커밋 `1497991`)
+
+판정부만 구현했다. 자격증명은 다루지 않았다.
+
+`src/lib/router/repository.ts` — 대상 저장소는 네 출처에서 우선순위로 파생된다:
+구조화 필드 → 지시문 명시 선언 → project execution target → control plane.
+선언은 라벨(`대상 저장소:`)과 GitHub URL 만 인정하고, 금지절과 `항목 NO` 표기는
+기존 정규화 유틸(`stripProhibitionClauses` / `stripDeniedPermissionItems` /
+`maskProvenanceLabels`)로 먼저 걷어낸다 — 금지문이 목적지가 되는 #320 계열
+역전을 막기 위해서다.
+
+`REPOSITORY_REGISTRY` 는 `vtm-ai-company` 를 **등록하되 `REGISTERED_ONLY`** 로
+둔다. 등록하지 않으면 "모르는 저장소"라고만 말할 수 있고, 그러면 control-plane
+으로 조용히 흘러가는 길이 다시 열린다. 등록은 실행 자격이 아니다 — runtime
+binding 의 `INACTIVE` 관례와 같다.
+
+불변식 하나가 모듈의 존재 이유다: **`dispatch=true` 이면 `executionRepository`
+는 언제나 `targetRepository` 와 같고, 차단이면 실행 저장소를 아예 들고 나가지
+않는다.** 파생 출처 · 직원 · 선언 조합 전수 검증으로 고정했다.
+
+`queue-wake-dispatch.mjs` 의 `REPO_NAME = REPO.split("/")[1]` 를 판정 결과로
+교체했다. 대상 선언이 없는 기존 업무는 그대로 control plane 으로 파생되므로
+회귀가 없다. `#398` 재현 입력은 `REPOSITORY_NOT_EXECUTABLE` 로 차단되며,
+control plane 에서 대신 실행되지 않는다.
+
+**B-2 (교차 저장소 checkout/commit/push · 저장소별 최소권한 분리)** 는 손대지
+않았다. credential HUMAN_GATE 상태 그대로다.
+
 ---
 
 ## C. Canonical Event → Telegram Automatic Bridge
 
 **등록일** 2026-08-21
 **등록 근거** 본부장 지시 — Telegram Push v1B 실증 직후 확정
-**상태** 등록됨 · 서윤 비서실장 SSOT 대기
+**상태** C-1 구현·테스트 완료 (`vtm-os-next` `claude/session-claim-recovery` `4acbdaa`) ·
+본부장 Review PASS 승인 2026-08-21 · main·release 반영 및 Production deploy 금지 유지
 **우선순위** 필수 (이것이 없으면 Push 레일은 수동 호출로만 동작한다)
 
 ### 왜 필요한가 — 실측된 공백
@@ -99,3 +129,33 @@ worker 자체 보고를 받는 자리라 §5상 푸시 근거가 될 수 없다.
   — 자동 유입을 붙이기 전에 실패 전파 방식을 확정해야 한다.
 - 새 수신 엔드포인트를 만들면 인증 credential 이 필요하다. 조건 6과 충돌하므로
   기존 인증 수단 재사용 범위를 먼저 정해야 한다.
+
+### C-1 결과 (2026-08-21 · 커밋 `4acbdaa`)
+
+이벤트가 있는 곳(vtm-os-next)에 판정을 두는 C-1 방식으로 확정 실행했다.
+
+실측 결과 본부장 보고 정책은 이미 있었다(`src/lib/reporting/`). 결함은 "판정이
+없다"가 아니라 **"판정이 있는데 발송 지점 대부분이 우회한다"** 였다. 7개 발송
+지점 중 6개가 `notifier.sendWithEvidence` 를 직접 불렀다(보고 시 5개로 파악했으나
+`ANOMALY_HUMAN_GATE` 가 3개 지점이었다).
+
+네 이벤트(`ANOMALY_HUMAN_GATE` / `ANOMALY_RESOLVED` / `STAGE_TERMINAL_HOLD` /
+`AUTONOMOUS_LOOP_FINAL`)를 `src/lib/notifications/canonical-push.ts` 게이트에
+연결했다. `completionClaimAllowed` / `evaluateDelivery` 를 호출할 뿐 다시 구현하지
+않고, `TelegramNotifier` · `notificationIdempotencyKey` ·
+`[NOTIFICATION EVIDENCE]` 는 그대로 재사용한다.
+
+두 가지를 배선에서 지켰다. 첫째, HUMAN_GATE 계열은 `try` 블록에 들어가기 **전**
+에 답을 낸다 — 판정 어디가 깨져도 사람을 부르는 알림은 살아 있어야 한다. 나머지
+범주는 반대로 닫는다(판정 실패 시 완료라고 말하지 않음). 둘째, 차단·보류된
+알림은 버리지 않고 사유와 전달 예정 시각을 durable 증적으로 남기되 `status` 를
+`SENT` 가 아닌 값으로 써서 기존 dedup 이 발송으로 오인하지 않게 한다.
+
+부수로 `ANOMALY_HUMAN_GATE` 3개 지점 중 2곳에 dedup 키가 아예 없던 것을 기존 키
+규약으로 채웠다. `EXTERNAL_CHIEF_DECISION` 경로는 이미 같은 정책
+(`managerReport.director.delivery`)을 거치므로 변경하지 않았다 — 게이트를 덧대면
+이중 차단이 되어 현재 나가는 실장 보고가 막힌다.
+
+별도 `CRITICAL_BLOCKED` canonical event 는 만들지 않았다. recovery/retry 소진은
+기존 `ANOMALY_HUMAN_GATE` 전환을 canonical 표현으로 쓰고, 해당 지점에
+`recoveryExhausted: YES` 를 남긴다.
