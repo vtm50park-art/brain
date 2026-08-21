@@ -50,3 +50,52 @@ scripts/pipeline/queue-wake-dispatch.mjs:531
   않는다.
 - 워커 워크플로에 다른 저장소 checkout/push 자격을 부여하는 것은 권한 확대다.
   본부장 승인 없이 진행하지 않는다.
+
+---
+
+## C. Canonical Event → Telegram Automatic Bridge
+
+**등록일** 2026-08-21
+**등록 근거** 본부장 지시 — Telegram Push v1B 실증 직후 확정
+**상태** 등록됨 · 서윤 비서실장 SSOT 대기
+**우선순위** 필수 (이것이 없으면 Push 레일은 수동 호출로만 동작한다)
+
+### 왜 필요한가 — 실측된 공백
+
+v1B 로 `TEST_NOTIFICATION → canonical-push → manager-push → telegram-rail →
+Telegram API` 경로가 실제로 이어짐을 증명했다. 그러나 **그 경로에 canonical
+이벤트를 넣어주는 주체가 아직 사람(또는 smoke workflow)뿐이다.**
+
+`vtm-ai-company` 저장소에는 canonical 이벤트 수신구가 없다. 인바운드 텔레그램
+웹훅 2개와 헬스체크가 전부이고, `supabase/functions/vtm-workforce-result` 는
+worker 자체 보고를 받는 자리라 §5상 푸시 근거가 될 수 없다.
+
+### 목표
+
+실제 VTM OS canonical 이벤트가 발생했을 때, 사람이나 smoke workflow 가 수동으로
+호출하지 않아도 canonical-push 판정 경로로 자동 유입되게 한다.
+
+### 필수 조건 (본부장 지시 원문 기준)
+
+1. worker 자체 결과를 canonical 이벤트로 오인하지 않는다.
+2. Review/PASS 이후의 진짜 canonical event 만 사용한다.
+3. `HUMAN_GATE_REQUIRED` 는 정책대로 즉시 전달한다.
+4. `PROJECT_COMPLETE` / `STAGE_COMPLETE` / `CRITICAL_BLOCKED` 조건을 유지한다.
+5. 인증·permission·audit·dedup 을 유지한다.
+6. 새 credential 을 임의 생성하지 않는다.
+7. 교차 저장소 구조가 필요하면 **B. Cross-Repository Work Order Rail** 과 연계한다.
+8. 실패 시 다른 독립 업무를 멈추지 않는다.
+
+### 설계 전 반드시 해소할 것 (v1B 에서 실측된 사실)
+
+- **dedup 저장소가 아직 없다.** `runCanonicalPush` 는 `seen` 저장소를 주입받을
+  때만 중복을 막는다. 현재 실행 진입점은 주입하지 않으므로 dedup 이 no-op 이다.
+  자동 유입을 붙이기 전에 durable 한 `seen` 저장소(예: Supabase 테이블)를
+  결정해야 한다. 조건 5의 dedup 은 그 없이는 성립하지 않는다.
+- **상속받은 `sendTelegramMessage` 는 HTTP 실패에 throw 하지 않는다.**
+  `!response.ok` 이면 `console.error` 로 남기고 계속 진행한다. 따라서 401/403 도
+  호출자에게는 성공처럼 보인다. 알림 레일에서 이것은 "실패한 푸시가 성공으로
+  기록되는" 경로다. 기존 호출자 전부의 동작에 영향을 주므로 임의로 바꾸지 않았다
+  — 자동 유입을 붙이기 전에 실패 전파 방식을 확정해야 한다.
+- 새 수신 엔드포인트를 만들면 인증 credential 이 필요하다. 조건 6과 충돌하므로
+  기존 인증 수단 재사용 범위를 먼저 정해야 한다.
