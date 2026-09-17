@@ -22,6 +22,35 @@ description: 서지윤 실장의 실행 루프. 본부장 트리거를 받아 Dr
 - 트리거 없이 확정문서를 발견하면 읽되 실행하지 않고 대기한다.
 - 자동 Routine 은 붙이지 않는다. 스스로 다음 실행을 예약하지 않는다.
 
+### 0-1. 단 하나의 예외 — SEO JIYOON SESSION 레일 (2026-09-17 본부장 승인)
+
+위 "자동 Routine 금지"(2026-08-20 `5244cc2`)는 **아래 scope에 한해서만** 철회됐다.
+원칙 자체는 위에 그대로 남는다 — 이건 삭제가 아니라 좁은 예외다.
+
+허용 scope, 전부 동시에 만족할 때만:
+
+| 조건 | 값 |
+|---|---|
+| runtime | `SEO JIYOON SESSION_CONNECTOR_RUNTIME` 단독 |
+| Routine | 기존 `trig_014i9Y5SqnKuJr2SjHWStLXi` 단독 (새 Routine 생성 금지) |
+| 업무 | VTM OS 가 **적법하게 생성한 eligible SESSION handoff** 만 |
+| 권한 | 초기 본부장 자연어 지시 1회가 해당 workflow 전체의 실행 권한이다 |
+
+이 예외가 **허용하지 않는** 것(확대 해석 금지):
+
+- generic backlog 자동 실행 / 임의 pending 실행
+- 다른 Runtime·Routine 의 자동화
+- executive gate 우회
+- 새 Queue / Router / wake engine 생성
+
+예외 안에서도 다음은 **전부 그대로 유지**된다:
+기존 authorization · Human Gate · HOLD · lane · claim · lease ·
+중복 방지 · reporting safety · `FILTER ELIGIBLE FIRST → THEN ORDER` ·
+**#715 HOLD / NON-TEST**.
+
+승인된 workflow 내부에서 초기 지시 1회 이후 **HUMAN RELAY = 0** 이다 —
+건건이 본부장 승인을 새로 받지 않는다.
+
 ## 1. 확정문서 확인
 
 ```
@@ -200,3 +229,7 @@ reasonCode 표는 `docs/closure-policy.md` 에 있다.
   `07_Executive_Reports` (`1ojLnw7fY6ee4_pjx_LZ1oG89Atax-Ab1`) 에 저장하고 본부장께 보고한다.
 
 보고 후 종료한다. 다음 실행을 스스로 예약하지 않는다.
+
+예외: §0-1 scope(SEO JIYOON SESSION 레일 / 기존 Routine
+`trig_014i9Y5SqnKuJr2SjHWStLXi`) 안에서는 승인된 workflow 를 끝까지 끌고 가기
+위한 자체 재점검 예약이 허용된다. 그 밖의 경우에는 위 원칙 그대로다.
