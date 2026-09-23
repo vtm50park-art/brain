@@ -58,9 +58,30 @@ Content-Type: application/json
 세 헤더는 **전부 필수**다. `anthropic-beta` 가 없으면 `400 invalid_request_error`
 로 거절된다. 경로도 `/v1/claude_code/...` 다 — `/api/claude_code/...` 는 오류였다.
 
-body 는 보내지 않는다. `text` 필드는 쓰지 않는다. 지시서는 GitHub 에서 읽으므로
-발사 payload 에 지시 내용을 담을 이유가 없고, 담지 않는 편이 토큰 유출 시
-주입 경로를 없애 준다.
+### body — canonical issue pointer 하나만
+
+`text` 필드에는 **canonical GitHub issue pointer 하나만** 담는다.
+**상세 지시서 본문은 전달하지 않는다. GitHub issue 가 SSOT 다.**
+
+허용 형태는 둘 중 하나뿐이다.
+
+```
+vtm50park-art/<repo>#<번호>
+https://github.com/vtm50park-art/<repo>/issues/<번호>
+```
+
+```json
+{"text": "vtm50park-art/vtm-os-next#733"}
+```
+
+pointer 를 둘 이상 담지 않는다. 지시 문장·설명·요약을 덧붙이지 않는다.
+
+이유는 두 가지다. 첫째, 지시 원문이 issue 한 곳에만 있어야 SSOT 가 성립한다.
+payload 에 본문을 복사해 넣으면 issue 와 payload 중 어느 쪽이 정본인지 갈린다.
+둘째, `text` 는 토큰을 쥔 누구나 보낼 수 있고 문서상 `<routine-fire-payload>` 로
+**untrusted 표시되어** 전달된다. 좌표 하나로 줄이면 유출 시에도 주입할 여지가
+남지 않는다. Routine 프롬프트는 이 좌표를 **owner/repo 화이트리스트와 번호
+규칙으로 검증**한 뒤에만 읽고, 어긋나면 `POINTER_VALID: REJECTED` 로 멈춘다.
 
 - 발사는 **1회**. 실패해도 재시도하지 않는다(`RETRY = 0`).
 - 실패 시 에러 원문만 서지윤에게 반환한다.
