@@ -8,7 +8,13 @@
 
 ---
 
-## 승인 블록 (필수)
+## 승인 블록 — CANARY 임시 게이트 (영구 규칙 아님)
+
+> ⚠️ **이 블록은 이번 CANARY 한정 임시 장치다.**
+> Production Canon 으로 승격하지 않는다. CLAUDE.md 영구 운영규칙을 바꾸지 않는다.
+> ORIGINAL GOLDEN 의 Human 승인 의미는 **본부장 ↔ 서윤 대화에서 업무가 확정되는 것**
+> 으로 그대로 보존된다. 이 필드가 그 승인을 대체하거나 재설계하는 것이 아니다.
+> 이번 시험에서 이 필드의 유일한 용도는 **안전한 NON-EXECUTION 확인**이다.
 
 ```
 DIRECTOR_APPROVAL: PENDING
@@ -16,9 +22,9 @@ DIRECTOR_APPROVAL_DATE:
 DIRECTOR_APPROVAL_NOTE:
 ```
 
-`DIRECTOR_APPROVAL` 이 정확히 `APPROVED` 일 때만 실행한다.
-그 외 모든 값(PENDING · 공란 · 블록 부재 · 오타)은 **실행하지 않고 HOLD** 한다.
-승인 판단은 본부장 고유 권한이다. 서윤도 서지윤도 이 값을 쓰지 않는다.
+이번 CANARY 에서 `DIRECTOR_APPROVAL` 은 `PENDING` 으로 고정한다.
+따라서 판정은 언제나 `HOLD` 이고, 실행 경로는 한 번도 열리지 않는다.
+이번 시험의 실제 업무 실행은 **0** 이다.
 
 ---
 
