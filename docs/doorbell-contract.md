@@ -46,13 +46,46 @@ GET https://api.github.com/repos/vtm50park-art/brain/contents/08_READY_TO_EXECUT
 ### 3. DOORBELL — 정확히 1회
 
 ```
-POST https://api.anthropic.com/api/claude_code/routines/<ROUTINE_ID>/fire
+POST https://api.anthropic.com/v1/claude_code/routines/<ROUTINE_ID>/fire
 Authorization: Bearer <ROUTINE 전용 토큰>
+anthropic-beta: experimental-cc-routine-2026-04-01
+anthropic-version: 2023-06-01
+Content-Type: application/json
 ```
+
+`<ROUTINE_ID>` 는 `trig_` 로 시작한다(`routine_` 아님).
+
+세 헤더는 **전부 필수**다. `anthropic-beta` 가 없으면 `400 invalid_request_error`
+로 거절된다. 경로도 `/v1/claude_code/...` 다 — `/api/claude_code/...` 는 오류였다.
+
+body 는 보내지 않는다. `text` 필드는 쓰지 않는다. 지시서는 GitHub 에서 읽으므로
+발사 payload 에 지시 내용을 담을 이유가 없고, 담지 않는 편이 토큰 유출 시
+주입 경로를 없애 준다.
 
 - 발사는 **1회**. 실패해도 재시도하지 않는다(`RETRY = 0`).
 - 실패 시 에러 원문만 서지윤에게 반환한다.
-- 토큰은 **저장소·문서·로그에 절대 기록하지 않는다.** 서윤 쪽 비밀값으로만 보관한다.
+- 토큰은 **저장소·문서·로그·채팅에 절대 기록하지 않는다.** 서윤 쪽 secret 으로만 보관한다.
+  이 문서에도 자리표시자만 둔다.
+
+### 발사 전 점검 2개
+
+1. **Routine 이 켜져 있어야 한다.** paused 상태에서 호출하면 `400
+   invalid_request_error` 다. CANARY 직전까지는 의도적으로 disabled 로 둔다.
+2. **커넥터는 최소권한만 남긴다.** web UI 에서 API trigger 를 추가하면 연결된
+   커넥터가 기본으로 전부 포함된다. 이 CANARY 는 GitHub 지시서 SOURCE READ 만
+   하므로 그에 필요한 것 외에는 제거한다.
+
+### 주요 오류 응답
+
+| HTTP | type | 원인 |
+|---|---|---|
+| 400 | `invalid_request_error` | `anthropic-beta` 헤더 누락 · Routine paused |
+| 401 | `authentication_error` | 토큰 없음 또는 이 Routine 의 토큰이 아님 |
+| 403 | `permission_error` | 계정·조직에 이 엔드포인트 접근권 없음 |
+| 404 | `not_found_error` | Routine 없음 |
+| 429 | `rate_limit_error` | 일일 Routine 실행 한도 도달 (`Retry-After` 참조) |
+
+성공은 `200` 과 `claude_code_session_id` · `claude_code_session_url` 이다.
 
 ## CANARY 성공 판정
 
@@ -74,23 +107,29 @@ Authorization: Bearer <ROUTINE 전용 토큰>
 
 ## 막힌 지점 — 본부장만 해제 가능
 
-Routine 전용 bearer 토큰은 **HTTP API / claude.ai Routines 화면에서 생성할 때만**
-발급된다. 서지윤이 MCP 로 만든 Routine 은 토큰이 발급되지 않아
-(`api_token_hint` 공란) 서윤이 HTTP 로 누를 수 없다.
+API trigger 토큰은 **claude.ai Routines 화면에서만** 발급된다. 공식 문서 원문:
+"There is no public API for token management." CLI 역시 "cannot currently create
+or revoke tokens" 다. 서지윤의 MCP 도구에도 토큰 파라미터가 없다.
 
-실측:
+**토큰은 기존 Routine 에 사후 발급된다.** "API triggers are added to an existing
+routine" · "The URL and token are generated after the routine is saved, since they
+depend on the routine ID." 따라서 **Routine 을 새로 만들지 않는다.**
 
-| Routine | 생성 경로 | 전용 토큰 | HTTP 발사 |
-|---|---|---|---|
-| `CANARY-DRIVE-READ-ONLY` (9/18) | `http_api` | 있음 | 가능 |
-| `CANARY-SEOJIYOON-RECEIPT-ONLY` (9/22) | `meta_mcp` | 없음 | 불가 |
-| `PROTOTYPE(서지윤 사전검증)` (9/23) | `meta_mcp` | 없음 | 불가 |
+> 정정 기록: 이 문서의 이전 판은 "HTTP API 또는 화면에서 **생성할 때만** 발급된다"
+> 고 적고 Routine 재생성을 지시했다. 그것은 `created_via` 메타데이터 필드에서
+> 끌어낸 추정이었고, 공식 문서 확인 결과 **틀렸다.** 재생성은 불필요하며,
+> 본부장의 "새 Routine 생성 금지" 지시와도 충돌했다.
 
-따라서 본부장이 직접 1회만 하셔야 하는 일이 둘 있다.
+따라서 Human Gate 에서 하실 일은 1회, 기존 Routine 편집뿐이다.
 
-1. `PROTOTYPE` 의 프롬프트 원문 그대로 Routine 을 **HTTP API 또는 Routines 화면에서**
-   새로 만들어 전용 토큰을 발급한다.
-2. 그 Routine ID 와 토큰을 서윤에게 전달한다. 서지윤에게는 필요하지 않다.
+1. 기존 Routine `trig_01EqjTFp2nYiw4NyrbZsCJcd` 를 편집 →
+   Select a trigger → Add another trigger → **API** → Generate token.
+   토큰은 1회만 표시되고 재조회 불가하므로 그 자리에서 secret 으로 옮긴다.
+2. 같은 화면에서 커넥터를 **GitHub 지시서 SOURCE READ 에 필요한 최소권한만** 남긴다.
+3. Routine ID 와 URL, 토큰을 서윤에게만 전달한다. 서지윤에게는 필요하지 않다.
+4. Routine 활성화는 **CANARY 직전에** 한다. 그때까지 disabled 유지.
+
+토큰 원문은 이 문서·저장소·채팅·로그 어디에도 기록하지 않는다.
 
 ## 범위 밖 (이번 PHASE 에서 하지 않는다)
 
