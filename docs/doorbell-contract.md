@@ -24,24 +24,42 @@ ORIGINAL GOLDEN 의 Human 승인 의미는 **본부장 ↔ 서윤 대화에서 �
 
 ## 서윤이 수행하는 3단계
 
-### 1. GITHUB WRITE
+> **SSOT 확정 (본부장 지시 2026-09-23).** 이 레일의 canonical detailed instruction
+> SSOT 는 **GitHub Issue 하나**다. `08_READY_TO_EXECUTE/CURRENT_WORK_ORDER.md` 를
+> instruction SSOT 로 쓰지 않는다. Issue 본문을 다른 파일·queue·payload 에
+> **복제하지 않는다.**
 
-서윤은 아래 **단일 경로**에만 지시서를 쓴다. 이 경로 밖 파일은 지시로 취급하지 않는다.
+### 1. SEOYUN WRITE — canonical GitHub Issue 생성·완성
 
-```
-repo   vtm50park-art/brain
-branch claude/design-review-gpt-claude-abos6s
-path   08_READY_TO_EXECUTE/CURRENT_WORK_ORDER.md
-```
-
-### 2. GITHUB READBACK
-
-쓴 직후 같은 경로를 **다시 읽어** 커밋이 올라갔음을 확인한다.
-확인 실패 시 초인종을 누르지 않는다.
+서윤은 지시서를 **Issue 본문 한 곳에** 쓴다. 대상은 아래 화이트리스트 안이어야 한다.
 
 ```
-GET https://api.github.com/repos/vtm50park-art/brain/contents/08_READY_TO_EXECUTE/CURRENT_WORK_ORDER.md?ref=claude/design-review-gpt-claude-abos6s
+owner  vtm50park-art
+repo   vtm-os-next  또는  brain
 ```
+
+Issue 본문에는 서지윤이 되읽을 식별자 3개가 있어야 한다.
+
+```
+workOrderId
+issueRef
+directiveFingerprint
+```
+
+지시서 본문을 저장소 파일·queue·fire payload 에 복사해 두지 않는다.
+사본이 생기는 순간 어느 쪽이 정본인지 갈린다.
+
+### 2. SEOYUN READBACK — 동일 Issue 본문 authoritative readback
+
+초인종을 누르기 전에, **쓴 그 Issue 를 다시 읽어** 본문과 식별자 3개가
+의도대로 올라갔는지 확인한다. 확인 실패 시 초인종을 누르지 않는다.
+
+```
+GET https://api.github.com/repos/vtm50park-art/<repo>/issues/<번호>
+```
+
+읽는 대상은 서지윤이 읽을 것과 **완전히 같은 Issue** 다. 다른 사본을 검증
+대상으로 삼지 않는다.
 
 ### 3. DOORBELL — 정확히 1회
 
