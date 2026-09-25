@@ -38,13 +38,13 @@ owner  vtm50park-art
 repo   vtm-os-next  또는  brain
 ```
 
-Issue 본문에는 서지윤이 되읽을 식별자 3개가 있어야 한다.
+Issue 본문에는 서지윤이 되읽을 **canonical 식별자 10개**가 있어야 한다.
+`vtm-doorbell-canary/v1` 스키마이며, 아래 **영구 운영 계약** 절에 전체 목록과
+실행권한 플래그가 있다.
 
-```
-workOrderId
-issueRef
-directiveFingerprint
-```
+> 정정 기록: 이 자리의 이전 판은 `workOrderId` · `issueRef` ·
+> `directiveFingerprint` 3개를 요구했다. **그것은 legacy `#729` 스키마이며 서윤의
+> canonical 스키마와 교집합이 0 이다.** 아래 10개가 정본이다.
 
 지시서 본문을 저장소 파일·queue·fire payload 에 복사해 두지 않는다.
 사본이 생기는 순간 어느 쪽이 정본인지 갈린다.
@@ -125,6 +125,100 @@ payload 에 본문을 복사해 넣으면 issue 와 payload 중 어느 쪽이 �
 | 429 | `rate_limit_error` | 일일 Routine 실행 한도 도달 (`Retry-After` 참조) |
 
 성공은 `200` 과 `claude_code_session_id` · `claude_code_session_url` 이다.
+
+## 영구 운영 계약 (2026-09-25 개정 — 이 절이 현행이다)
+
+근거: 본부장 승인(2026-09-25) — "완주 레일 연결을 승인한다" · "앞으로 계속 이 레일
+사용할거니 한번만이 아니고 영구적 사용하게".
+
+아래는 `vtm-os-next#745` → `#746` 완주 실측으로 검증된 현행 계약이다.
+이 문서의 CANARY 전용 문구와 충돌하면 **이 절이 우선한다.**
+
+### 초인종은 자동이다 — 서윤이 HTTP 를 부르지 않는다
+
+**실측 정정.** 서윤이 토큰으로 `/fire` 를 호출할 필요가 없다.
+`[VTM DOORBELL]` 로 시작하는 제목의 Issue 를 만들면
+`.github/workflows/employee-runtime-v1.yml` 의 `github-doorbell` job 이
+**Issue 생성 이벤트로 Routine 을 자동 발화한다.**
+
+- 조건: 제목이 `[VTM DOORBELL]` 로 시작 · 작성자가 `vtm50park-art`
+- 정책: `AT_MOST_ONCE` / `NO_AUTO_RETRY` / 모호하거나 실패하면 HOLD
+- 마커를 발화 **전에** 기록하므로 같은 Issue 로 두 번 울리지 않는다
+- payload 는 `POINTER_ONLY` — 지시서 본문을 싣지 않는다
+- 증거: 그 Issue 에 `[VTM DOORBELL]` 댓글 2개(decision / outcome + sessionId)
+
+즉 **서윤이 하는 일은 Issue 를 쓰는 것 하나다.** 초인종은 저장소가 누른다.
+
+### Issue 본문 — canonical 식별자 10개
+
+```
+schemaVersion          vtm-doorbell-canary/v1
+phase
+instructionType
+idempotencyKey         발화 중복 판정 키. 지시서마다 새로 만든다
+issuedBy
+destinationRoutineId   trig_01EqjTFp2nYiw4NyrbZsCJcd
+repository             vtm50park-art/vtm-os-next
+issueNumber            SELF
+doorbellMergeCommit
+requiredAction
+```
+
+### 실행권한 플래그 — 이것이 없으면 읽고 멈춘다
+
+서지윤 Routine 의 **기본값은 HOLD** 다. 지시서가 아래를 명시할 때만 열린다.
+
+```
+workExecutionAllowed      YES 여야 실행이 열린다
+employeeDispatchAllowed   YES 여야 직원 배차가 열린다
+telegramAllowed           YES 여야 총괄과장 보고가 나간다
+issueAckCommentAllowed    YES 여야 검수 판정 댓글을 남긴다
+retryAllowed              항상 NO 로 취급한다
+```
+
+- `workExecutionAllowed` 와 `employeeDispatchAllowed` 가 **둘 다 YES** 일 때만 OPEN.
+- 하나라도 YES 가 아니거나 읽히지 않으면 **HOLD** — 읽고 보고만 하고 멈춘다.
+- 모호하면 OPEN 으로 해석하지 않는다. 모호함은 HOLD 다.
+- `issueAckCommentAllowed` 가 YES 가 아니면 검수 판정을 남길 자리가 없으므로
+  게이트를 HOLD 로 내린다.
+
+**이 구조가 "본부장 승인 없이 실행 금지"를 코드가 아니라 지시서로 지킨다.**
+서윤이 커밋한 것만으로는 실행되지 않는다. 승인이 문서 안에 있어야 한다.
+
+### 업무 필드 — 배차까지 가려면 함께 적는다
+
+```
+employeeMasterKey      배정할 직원 키 (예: jung-haeun)
+targetBranch           판단 기준 브랜치 (예: release/vtm-os-v1)
+```
+
+그리고 본문에 **실행 업무**와 **완료기준**을 적는다. 완료기준은 항목 단위로
+검수 가능한 형태여야 한다 — 서지윤이 항목마다 `- [x]` / `- [ ]` 로 판정한다.
+둘 중 하나라도 읽히지 않으면 서지윤은 추측하지 않고 HOLD 한다.
+
+> ⚠️ **직원에게 다른 브랜치를 읽으라고 시키지 않는다.** 직원 런타임은
+> `dontAsk` 모드라 Bash 가 거부되며, 직원은 자기 checkout 만 읽는다
+> (실측 `#746`). `targetBranch` 는 기준을 선언하는 것이고, 동기 여부 확인은
+> 서지윤이 검수에서 한다. 자세한 근거는 `docs/employee-rules.md` 다.
+
+### 완주 경로 — 실측된 전 구간
+
+```
+서윤 Issue WRITE ([VTM DOORBELL] 제목)
+  → github-doorbell job 자동 발화 (AT_MOST_ONCE)
+  → 새 SEOJIYOON 세션 WAKE → identity 복원
+  → pointer 검증 (whitelist · #715 거부)
+  → 그 Issue 하나 SOURCE READ → 식별자 10개 readback
+  → 실행권한 판독 → OPEN 이면 계속, 아니면 HOLD
+  → Work Order Issue 발행 ([AI-EMPLOYEE-TASK])
+  → Employee Runtime Rail V1 자동 기동 → 직원 실행 → 결과 댓글
+  → 서지윤 검수 → [CHIEF_OF_STAFF VERDICT] 댓글
+  → chief-review-gate.yml (mode=employee-verdict) 1회 발동
+  → 총괄과장 Telegram 보고 + [NOTIFICATION EVIDENCE]
+```
+
+실측 근거: `#745`(지시서) → `#746`(Work Order) → Telegram messageId 320.
+**HUMAN_RELAY = 0** — 초인종 이후 사람이 끼는 지점이 없었다.
 
 ## CANARY 성공 판정
 

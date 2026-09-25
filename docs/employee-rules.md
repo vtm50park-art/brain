@@ -96,15 +96,40 @@
 
 - 런타임은 이 필드를 강제하지 않는다. **지시 수준의 필수 필드**다.
   즉 빠뜨렸을 때 막아주는 장치가 없으므로 발행자가 책임진다.
-- 기준 브랜치가 직원 브랜치와 다를 수 있다는 점을 Work Order 본문에 적고,
-  읽기 방법까지 지정한다. 예: `git fetch --depth=1 origin <branch>` 후
-  `git ls-tree -r --name-only origin/<branch> -- <path>` ·
-  `git show origin/<branch>:<path>`.
 - **직원 런타임은 `TASK` 한 줄만 직원에게 전달한다.** Issue 본문의 나머지 필드는
   직원 프롬프트에 들어가지 않는다. 그러므로 `TARGET_BRANCH` 는 별도 필드로 적는
-  것만으로 부족하고, **`TASK` 한 줄 안에도 기준 브랜치와 읽는 방법을 넣어야** 한다.
-- `TASK_MODE: READ_ONLY` 는 유지된다. fetch 와 `git ls-tree` · `git show` 는
-  작업트리를 건드리지 않으므로 `git status --porcelain` 이 깨끗하다.
+  것만으로 부족하고, **`TASK` 한 줄 안에도 기준 브랜치를 적어야** 한다.
+- **직원에게 다른 브랜치를 읽으라고 지시하지 않는다.** 직원은 자기 checkout 만
+  읽을 수 있다 — 아래 실측 근거 참조. 과제는 직원 브랜치에서 답할 수 있는
+  형태여야 한다.
+- 대신 **직원이 어느 브랜치를 읽었는지 보고하게** 한다. 런타임 증거 댓글의
+  `Branch:` 항목이 그것을 이미 남긴다.
+- **기준 브랜치와의 동기 여부는 서지윤이 검수 단계에서 확인한다.** 직원에게는
+  그 수단이 없고 서지윤에게는 있다. 이 구분을 지킨다.
+
+### 실측 — 직원은 다른 브랜치를 읽을 수 없다
+
+근거: `vtm-os-next#746` (2026-09-25).
+
+직원 런타임은 `claude -p --permission-mode dontAsk` 로 직원을 띄운다. 그 모드에서
+**Bash 도구 자체가 거부된다.** 정하은에게 `git fetch --depth=1 origin <branch>` 와
+`git show origin/<branch>:<path>` 를 지시했더니 이렇게 돌아왔다.
+
+> "Permission to use Bash has been denied because Claude Code is running in
+> don't ask mode" — 대체 조회 수단(Read 등) 없음. 값을 추측하여 보고하지 않습니다.
+
+직원은 값을 만들어내지 않고 `STATUS: BLOCKED` 로 정직하게 반환했다. 결함은
+직원이 아니라 **지시 방법**에 있었다.
+
+따라서 직원이 실제로 읽을 수 있는 범위는 **자기 브랜치의 checkout** 뿐이다
+(`Read` · `Glob` · `Grep`). 런타임이 `TARGET_BRANCH` 를 checkout 하게 만드는 것은
+workflow 변경이며 별도 승인 사항이다 — 임의로 하지 않는다.
+
+> 정정 기록: 이 절의 이전 판(`d71679c` · `38c340d`)은 읽기 방법으로
+> `git fetch` · `git ls-tree` · `git show` 를 지정했다. **그 방법은 직원 런타임에서
+> 실행되지 않는다.** 규칙의 취지(기준 브랜치를 명시한다)는 유지하되 방법은 위와
+> 같이 정정한다. 문서에 방법을 적을 때는 그 방법이 해당 런타임에서 실제로
+> 실행되는지 먼저 확인한다.
 
 ### 정정 기록 — 이 규칙의 최초 근거는 틀렸다
 
