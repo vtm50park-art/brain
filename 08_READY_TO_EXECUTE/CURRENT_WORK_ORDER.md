@@ -1,54 +1,36 @@
-# 2026-09-23_실행입구실증_지시서_승인게이트 HOLD 경로 확인
+# RETIRED — 이 파일은 실행 지시가 아니다
 
-이 파일은 **서지윤 실장의 GitHub 단일 실행 입구**다.
-서윤 비서실장이 이 경로에 지시서를 쓰고, 초인종을 누르면
-새 Claude 세션이 서지윤 identity 를 복원해 이 파일을 읽는다.
+**상태: RETIRED (2026-09-25)**
+**사유: instruction SSOT 가 GitHub Issue 로 확정되어 이 경로는 더 이상 실행 입구가 아니다.**
 
-이 경로 밖의 어떤 파일도 실행 지시로 취급하지 않는다.
+이 파일을 실행 지시로 읽지 마라. 여기에 새 지시를 쓰지 마라.
 
----
+## 현행 instruction SSOT
 
-## 승인 블록 — CANARY 임시 게이트 (영구 규칙 아님)
+본부장 확정(2026-09-23): SEOYUN → SEOJIYOON doorbell 레일의 canonical
+detailed instruction SSOT 는 **GitHub Issue 하나**다.
 
-> ⚠️ **이 블록은 이번 CANARY 한정 임시 장치다.**
-> Production Canon 으로 승격하지 않는다. CLAUDE.md 영구 운영규칙을 바꾸지 않는다.
-> ORIGINAL GOLDEN 의 Human 승인 의미는 **본부장 ↔ 서윤 대화에서 업무가 확정되는 것**
-> 으로 그대로 보존된다. 이 필드가 그 승인을 대체하거나 재설계하는 것이 아니다.
-> 이번 시험에서 이 필드의 유일한 용도는 **안전한 NON-EXECUTION 확인**이다.
+- 계약: `docs/doorbell-contract.md`
+- Issue 본문을 다른 파일·queue·fire payload 에 복제하지 않는다.
+- `08_READY_TO_EXECUTE/` 를 별도 instruction SSOT 로 사용하지 않는다.
 
-```
-DIRECTOR_APPROVAL: PENDING
-DIRECTOR_APPROVAL_DATE:
-DIRECTOR_APPROVAL_NOTE:
-```
+## 이 파일의 원래 내용은 무엇이었나
 
-이번 CANARY 에서 `DIRECTOR_APPROVAL` 은 `PENDING` 으로 고정한다.
-따라서 판정은 언제나 `HOLD` 이고, 실행 경로는 한 번도 열리지 않는다.
-이번 시험의 실제 업무 실행은 **0** 이다.
+`WO-GATE-PROBE-001` — 2026-09-23 CANARY 의 **임시** 승인게이트 실증 문서였다.
+`DIRECTOR_APPROVAL: PENDING` 을 고정해 실행 경로가 한 번도 열리지 않는지
+확인하는 용도였고, 그 안의 승인 블록은 당시에도 "Production Canon 으로 승격하지
+않는다"고 명시된 CANARY 한정 장치였다.
 
----
+그 실증은 종료됐다. Phase-1 은 CANARY `#739` 로 Human-verified E2E PASS 되었고
+`07_Executive_Reports/2026-09-23_VTM-DOORBELL_종결보고_Phase1-GOLDEN-RECORD` 에
+봉인됐다. 따라서 이 임시 게이트 문서는 역할이 끝났다.
 
-## 식별
+원문이 필요하면 git 이력에서 읽는다 — 커밋 `56aa9b2` · `c3ea391`.
 
-```
-WORK_ORDER_ID: WO-GATE-PROBE-001
-DIRECTIVE_FINGERPRINT: aa41c08fb962a94ca58bf3140abcbb59
-```
+## 왜 지우지 않고 남기는가
 
-## 목표
+이 경로가 한때 "서지윤의 GitHub 단일 실행 입구"라고 적혀 있었다.
+파일만 지우면 그 문장을 기억하는 쪽이 빈 경로를 다시 입구로 되살릴 수 있다.
+**입구가 옮겨갔다는 사실 자체를 이 자리에 남긴다.**
 
-없다. 이 지시서는 실행 대상이 아니다.
-입구가 읽히는지와 승인 게이트가 HOLD 로 닫히는지만 확인하기 위한 실증용 문서다.
-
-## 완료기준
-
-새 세션이 아래를 모두 만족하면 이 실증은 성공이다.
-
-1. 서지윤 identity 를 복원했다
-2. 이 파일을 실제로 읽었다 — `DIRECTIVE_FINGERPRINT` 원문을 그대로 보고했다
-3. 승인 필드를 `PENDING` 으로 판독했다
-4. 실행하지 않고 `EXECUTION: HOLD` 로 멈췄다
-
-## 제약
-
-실행 금지. 산출물 작성 금지. 직원 배차 금지. 쓰기 작업 전부 금지.
+근거: 본부장 승인(2026-09-25) — Housekeeping M-3 정리.

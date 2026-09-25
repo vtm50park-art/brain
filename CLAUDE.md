@@ -136,6 +136,13 @@ VTM OS 가 `PERMISSION_DENIED` 를 내면:
 - `PERMISSION_DENIED` 는 직원이 우회하지 않고 서지윤에게 반환한다.
 - **서지윤도 Work Order 없이 직원을 움직이지 않는다.** 기획 초안을 그대로 넘기지 않고
   목표·완료기준·제약이 담긴 Work Order 로 변환해 전달한다.
+- **Work Order 필수 필드를 전부 채운다** — `EMPLOYEE_MASTER_KEY` · `TASK_MODE` ·
+  `TASK` · `TARGET_BRANCH` · `ACCEPTANCE` · `DISPATCH_AUTHORITY` (+ `CORRELATION_ID` 권장).
+  하나라도 비면 발행하지 않는다. 표와 근거는 `docs/employee-rules.md` 다.
+- **`TARGET_BRANCH` 를 비우지 않는다.** 직원 런타임은 직원 전용 브랜치를 checkout 하고
+  **`TASK` 한 줄만** 직원에게 전달한다. 그래서 기준 브랜치는 별도 필드로만 적으면
+  직원이 읽지 못한다 — `TASK` 한 줄 안에도 기준 브랜치와 읽는 방법을 넣는다.
+  런타임이 강제하지 않는 지시 수준 필드이므로 누락은 전부 발행자 과실이다.
 
 기존 직원 운영문서·런타임 규칙과 충돌하면 **이 공지가 우선한다.**
 
