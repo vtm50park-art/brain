@@ -82,20 +82,43 @@
 
 ### `TARGET_BRANCH` 를 필수로 두는 이유
 
-근거: 본부장 승인(2026-09-25), Phase-2 소형 실증 `vtm-os-next#743` 미달 사례.
+근거: 본부장 승인(2026-09-25).
 
 직원 런타임은 **직원 전용 브랜치를 checkout 한다.** 기준 브랜치가 아니다.
-그래서 Work Order 가 브랜치를 말하지 않으면, 직원은 자기 브랜치에서 본 것을
-정직하게 보고하고도 기준 브랜치와 수치가 어긋난다. `#743` 에서 실제로
-workflow 11개 대 24개로 갈렸다. **직원 과실이 아니라 Work Order 과실이다.**
+직원 브랜치는 기준 브랜치보다 뒤처질 수 있으므로, 파일 **내용**을 읽는 업무는
+브랜치를 말하지 않으면 낡은 내용을 근거로 답할 수 있다.
+
+실측(2026-09-25, `vtm-os-next`): `.github/workflows` 의 파일 **집합**은
+`release/vtm-os-v1` 과 `claude/employee/technology-platform/jung-haeun` 이
+동일했다(양쪽 11개, 같은 파일명). 그러나 **11개 중 4개는 blob SHA 가 달랐다** —
+`a4-real-task-worker.yml` · `ai-manager-review.yml` · `chief-review-gate.yml` ·
+`employee-runtime-v1.yml`. 즉 목록형 질문은 안전했고 내용형 질문은 위험했다.
 
 - 런타임은 이 필드를 강제하지 않는다. **지시 수준의 필수 필드**다.
   즉 빠뜨렸을 때 막아주는 장치가 없으므로 발행자가 책임진다.
 - 기준 브랜치가 직원 브랜치와 다를 수 있다는 점을 Work Order 본문에 적고,
-  읽기 방법까지 지정한다. 예: `git fetch origin <branch>` 후
-  `git ls-tree -r --name-only origin/<branch> -- <path>`.
-- `TASK_MODE: READ_ONLY` 는 유지된다. fetch 와 `git ls-tree` 는 작업트리를
-  건드리지 않으므로 `git status --porcelain` 이 깨끗하다.
+  읽기 방법까지 지정한다. 예: `git fetch --depth=1 origin <branch>` 후
+  `git ls-tree -r --name-only origin/<branch> -- <path>` ·
+  `git show origin/<branch>:<path>`.
+- **직원 런타임은 `TASK` 한 줄만 직원에게 전달한다.** Issue 본문의 나머지 필드는
+  직원 프롬프트에 들어가지 않는다. 그러므로 `TARGET_BRANCH` 는 별도 필드로 적는
+  것만으로 부족하고, **`TASK` 한 줄 안에도 기준 브랜치와 읽는 방법을 넣어야** 한다.
+- `TASK_MODE: READ_ONLY` 는 유지된다. fetch 와 `git ls-tree` · `git show` 는
+  작업트리를 건드리지 않으므로 `git status --porcelain` 이 깨끗하다.
+
+### 정정 기록 — 이 규칙의 최초 근거는 틀렸다
+
+이 절의 최초 커밋(`d71679c`)은 근거로 "`#743` 에서 workflow 11개 대 24개로
+갈렸다"를 적었다. **틀렸다.** 24는 `.github/workflows` 의 파일 수가 아니라
+GitHub Actions **workflow 등록부**(`GET /actions/workflows`)의 `total_count` 이며,
+default branch 에 파일이 더 이상 없는 **과거 등록 13건**을 그대로 포함한다
+(`tmp-*` · `fix-stage46-50-*` · `patch-*` · `verify-*` 등 일회성 워크플로).
+
+파일 수는 양쪽 브랜치 모두 11개였고 **직원 정하은의 답이 맞았다.**
+서지윤 실장이 `#743` 에 내린 `REWORK` 판정은 오판이며 `PASS` 로 정정했다.
+
+재발 방지: **수를 근거로 쓸 때는 그 수가 무엇을 센 것인지 같이 적는다.**
+등록부·인덱스·캐시의 카운트를 파일·엔티티 카운트로 쓰지 않는다.
 
 ## 직군별 추가 기준
 
