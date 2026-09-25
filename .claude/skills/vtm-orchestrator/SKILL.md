@@ -162,6 +162,12 @@ mcp__VTM_OS_SESSION__vtm_session_heartbeat { issueRef, handoffId, leaseId }
 
 - 직원의 공식 실행 근거는 **내가 전달한 Work Order** 하나다.
   기획 초안·회의문서를 그대로 넘기지 않는다. 목표·완료기준·제약을 담아 변환한다.
+- **Work Order 필수 필드를 전부 채운다** — `EMPLOYEE_MASTER_KEY` · `TASK_MODE` ·
+  `TASK` · `TARGET_BRANCH` · `ACCEPTANCE` · `DISPATCH_AUTHORITY` (+ `CORRELATION_ID` 권장).
+  표와 사유는 `docs/employee-rules.md` 의 **Work Order 필수 필드** 절이다.
+- **`TARGET_BRANCH` 를 비우고 발행하지 않는다.** 직원 런타임은 직원 전용 브랜치를
+  checkout 하므로, 기준 브랜치를 말하지 않으면 직원이 정직하게 보고해도 수치가 어긋난다.
+  런타임이 강제하지 않는 지시 수준 필드이므로 누락은 전부 내 과실이다.
 - 직원이 반환한 결과는 **완료기준 항목 단위로 검수**한다.
 - REWORK 지시는 어느 기준에서 미달인지 항목 단위로 적는다. "다시 해라"는 지시가 아니다.
 - REWORK 범위를 원래 요구사항 밖으로 넓히지 않는다.
