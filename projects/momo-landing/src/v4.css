@@ -1,0 +1,74 @@
+/* ===== v4 · 모모형 portraits ===== */
+.story-visual { position: relative; }
+.story-portrait { position: absolute; right: -3%; bottom: -14%; width: 40%; margin: 0; border-radius: 22px; overflow: hidden; aspect-ratio: 1; box-shadow: 0 40px 90px -30px rgba(0,0,0,.95), 0 0 0 1px rgba(241,207,126,.35); animation: floaty 7s ease-in-out infinite; z-index: 2; }
+.story-portrait::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: linear-gradient(140deg, var(--gold), rgba(241,207,126,.05) 40%, rgba(61,220,151,.5)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; z-index: 2; }
+.story-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; display: block; }
+.story-portrait figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 14px 12px; background: linear-gradient(transparent, rgba(4,8,15,.86)); display: flex; flex-direction: column; gap: 2px; }
+.story-portrait figcaption b { font-size: clamp(15px, 1.5vw, 19px); font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+.story-portrait figcaption span { font-size: 11px; font-weight: 600; letter-spacing: .12em; color: var(--gold); }
+@keyframes floaty { 0%,100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+@media (max-width: 899px) { .story-visual { margin-bottom: 52px; } .story-portrait { width: 42%; right: 3%; bottom: -22%; } }
+
+.answer-split { display: grid; gap: clamp(28px, 4vw, 64px); align-items: center; }
+@media (min-width: 900px) { .answer-split { grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr); padding-left: clamp(24px, 3vw, 48px); } .answer-split .answer-text { font-size: clamp(26px, 2.9vw, 44px); } }
+.answer-portrait { position: relative; margin: 0; align-self: end; }
+.answer-portrait img { display: block; width: 100%; height: auto; }
+.answer-portrait img { border-radius: 28px; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, #000 70%, transparent 100%); filter: contrast(1.04) saturate(1.02); }
+.ap-glow { position: absolute; left: 10%; right: 10%; top: 4%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(241,207,126,.32), rgba(179,38,79,.16) 45%, transparent 70%); filter: blur(24px); z-index: -1; animation: breathe 8s ease-in-out infinite; }
+.answer-portrait figcaption { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); display: flex; align-items: baseline; gap: 10px; white-space: nowrap; padding: 10px 18px; border-radius: 999px; background: rgba(4,8,15,.62); backdrop-filter: blur(12px); border: 1px solid rgba(241,207,126,.35); }
+.answer-portrait figcaption span { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--gold); }
+.answer-portrait figcaption b { font-size: 17px; font-weight: 800; color: #fff; }
+.answer-portrait figcaption em { font-style: normal; font-size: 12px; color: var(--soft); font-weight: 600; }
+@media (max-width: 899px) { .answer-portrait { max-width: 340px; margin: 0 auto; } .answer-portrait figcaption em { display: none; } }
+
+.sign-wrap { position: relative; display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 44px; }
+.sign-wrap .signature { margin-top: 0; }
+.sign-avatar { width: 72px; height: 72px; flex: none; border-radius: 50%; padding: 2px; background: linear-gradient(140deg, var(--gold), rgba(61,220,151,.7)); box-shadow: 0 14px 30px -10px rgba(0,0,0,.8); }
+.sign-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+@media (prefers-reduced-motion: reduce) { .story-portrait, .ap-glow { animation: none; } }
+
+/* VS badge sits exactly on the seam between the two columns */
+@media (min-width: 900px) {
+  .vs { grid-template-columns: 1fr 1fr; column-gap: 28px; }
+  .vs-badge { position: absolute; left: 50%; top: 50%; width: auto; transform: translate(-50%, -50%); pointer-events: none; }
+}
+
+/* Keep the hero's background brightness all the way down: sections no longer stack dark overlays */
+.story, .collage, .types, .closing, .foot { background: transparent; }
+.warn { background: radial-gradient(60% 50% at 80% 10%, rgba(110, 21, 48, .22), transparent 70%); }
+.compare { background: radial-gradient(60% 60% at 50% 40%, rgba(31,174,122,.08), transparent 70%); }
+.finder { background: radial-gradient(70% 50% at 50% 0%, rgba(31, 174, 122, .14), transparent 70%); }
+.answer-bg { display: none; }
+.sign-avatar { width: 84px; height: 84px; }
+
+/* Flow rail: dots only, no step labels */
+.rail a span { display: none; }
+
+/* Finder head: 모모형추천 stamp on the left, title on the right */
+.finder-hero { display: grid; gap: clamp(20px, 3vw, 48px); align-items: center; margin-bottom: clamp(40px, 6vw, 72px); }
+.finder-hero .sec-head { margin-bottom: 0; }
+@media (min-width: 900px) { .finder-hero { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); } }
+@media (max-width: 899px) { .finder-hero .sec-head { text-align: center; } }
+.stamp { position: relative; margin: 0; justify-self: center; width: min(100%, 600px); }
+.stamp.reveal { opacity: 1; transform: none; filter: none; transition: none; }
+.stamp::before { content: ""; position: absolute; left: 8%; right: 8%; top: 18%; bottom: 8%; border-radius: 50%; background: radial-gradient(closest-side, rgba(241,207,126,.45), rgba(241,207,126,0)); opacity: 0; filter: blur(18px); }
+.stamp img { position: relative; display: block; width: 100%; height: auto; opacity: 0; transform-origin: 50% 60%; -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, #000 78%, transparent 100%); }
+.stamp-ring { position: absolute; left: 50%; top: 62%; width: 92%; aspect-ratio: 2.4; border-radius: 50%; border: 3px solid rgba(241,207,126,.85); box-shadow: 0 0 30px rgba(241,207,126,.6), inset 0 0 24px rgba(241,207,126,.4); opacity: 0; transform: translate(-50%, -50%) scale(.3); pointer-events: none; }
+.stamp.in img { animation: stamp-slam .64s cubic-bezier(.3, 1.4, .5, 1) .3s both; }
+.stamp.in .stamp-ring { animation: stamp-ring .75s cubic-bezier(.2, .7, .3, 1) .62s both; }
+.stamp.in::before { animation: stamp-glow 1.4s ease-out .62s both; }
+.stamp.in + .sec-head { animation: stamp-thud .42s ease-out .62s both; }
+@keyframes stamp-slam {
+  0%   { opacity: 0; transform: scale(2.8) rotate(-18deg); filter: blur(10px) drop-shadow(0 80px 60px rgba(0,0,0,.2)); }
+  50%  { opacity: 1; transform: scale(.9) rotate(-1deg); filter: blur(0) drop-shadow(0 4px 6px rgba(0,0,0,.7)); }
+  68%  { transform: scale(1.05) rotate(-3.5deg); }
+  84%  { transform: scale(.98) rotate(-2.6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); filter: drop-shadow(0 26px 40px rgba(0,0,0,.55)); }
+}
+@keyframes stamp-ring { 0% { opacity: .95; transform: translate(-50%, -50%) scale(.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); border-width: 1px; } }
+@keyframes stamp-glow { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: .55; } }
+@keyframes stamp-thud { 0%, 100% { transform: none; } 20% { transform: translate(-4px, 3px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-2px, 1px); } 80% { transform: translate(1px, 0); } }
+@media (prefers-reduced-motion: reduce) { .stamp img { opacity: 1; animation: none !important; transform: rotate(-3deg); } .stamp-ring { display: none; } }
+
+/* Hide the Vercel preview toolbar bubble on this page */
+vercel-live-feedback { display: none !important; }
