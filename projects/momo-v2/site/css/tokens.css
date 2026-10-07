@@ -1,0 +1,100 @@
+/**
+ * 디자인 토큰 — V2_BUILD_SPEC §5-1 · §5-2 · §5-4
+ * 색·타이포·간격은 전부 여기서만 정의한다. 다른 CSS 에서 HEX 하드코딩 금지.
+ */
+
+:root {
+  /* 색 — §5-1 */
+  --navy: #0f2a43;
+  --teal: #17706f;
+  --mint: #eaf4f3;
+  --ivory: #faf8f4;
+  --ink: #1b1f24;
+  --slate: #5f6873;
+  --slate-2: #5b6570;
+  --line: #e3e7eb;
+  --gold: #b8995a;
+  --clay: #b4533c;
+  --white: #ffffff;
+
+  /* 지도 단계 색 — §5-1 / §6-2 (DEV-2B 지도에서 사용) */
+  --map-none: #f1f3f5;
+  --map-none-stroke: #c5ccd3;
+  --map-low: #bfdedc;
+  --map-mid: #8cc0be;
+  --map-high: #17706f;
+  --map-high-label: #ffffff;
+  --map-selected: var(--navy);
+
+  /* 타이포 — §5-2 (데스크톱 기본, 모바일은 아래 미디어쿼리에서 교체) */
+  --font-sans: 'Pretendard Variable', Pretendard, system-ui, -apple-system, sans-serif;
+
+  --h1-size: 48px;
+  --h1-line: 58px;
+  --h2-size: 36px;
+  --h2-line: 46px;
+  --h3-size: 24px;
+  --h3-line: 34px;
+  --body-size: 18px;
+  --body-line: 30px;
+  --caption-size: 14px;
+  --caption-line: 22px;
+  --cta-size: 18px;
+  --cta-line: 26px;
+
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+
+  /* 레이아웃 — §5-2 본문 최대 폭 680px / §6-1 PC 컨테이너 1280 */
+  --measure: 680px;
+  --container: 1280px;
+  --gutter: 24px;
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  /* 간격 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* 터치 타깃 최소 — §5-4 */
+  --touch: 44px;
+
+  /* 모바일 breakpoint — js/copy.js 의 MOBILE_BREAKPOINT 와 같은 값 — §5-4 */
+  --bp-mobile: 768px;
+
+  /* 모션 — §5-3 (상세 표는 css/motion.css 상단) */
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 300ms;
+  --dur-slower: 400ms;
+  --dur-zoom: 600ms;
+  --ease: cubic-bezier(0.33, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+
+  /* 그림자 — 면적 최소, 카드 경계는 --line 우선 */
+  --shadow-card: 0 1px 2px rgba(15, 42, 67, 0.06);
+  --shadow-fixed: 0 -2px 12px rgba(15, 42, 67, 0.12);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --h1-size: 30px;
+    --h1-line: 40px;
+    --h2-size: 26px;
+    --h2-line: 36px;
+    --h3-size: 20px;
+    --h3-line: 30px;
+    --body-size: 16px;
+    --body-line: 27px;
+    --gutter: 20px;
+  }
+}

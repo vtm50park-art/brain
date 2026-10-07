@@ -1,0 +1,110 @@
+/**
+ * 모션 등재표 — V2_BUILD_SPEC §5-3
+ * transform·opacity 만 사용한다. 150~400ms(지도 줌 600ms 예외).
+ * 섹션 진입은 1회·이동 24px 이하. 장식용 무한 반복 없음. 패럴랙스 없음.
+ *
+ * | 이름                | 목적                          | 길이  | reduced-motion 대체        |
+ * |---------------------|-------------------------------|-------|----------------------------|
+ * | hero-rotate         | 히어로 고민 문구 교체          | 300ms | 4문구 정적 목록·전환 없음   |
+ * | section-enter       | 섹션 진입 1회(24px 상승)       | 400ms | 즉시 최종 상태             |
+ * | fixed-cta-slide     | 모바일 고정 CTA 슬라이드업      | 200ms | 즉시 표시·숨김             |
+ * | cta-press           | CTA·칩 누름 피드백             | 150ms | 변화 없음                  |
+ * | card-hover          | 카드 hover 테두리·배경         | 150ms | 변화 없음                  |
+ * | map-zoom            | 서울·경기 viewBox 보간(DEV-2B) | 600ms | 0ms 즉시 이동              |
+ * | summary-update      | 조건 요약 바 갱신(DEV-2B)      | 150ms | 변화 없음                  |
+ */
+
+/* hero-rotate — 300ms. 전환 중에만 opacity·transform 을 건드린다 */
+.hero__rotator-line {
+  transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+}
+
+.hero__rotator[data-phase='out'] .hero__rotator-line {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.hero__rotator[data-phase='in'] .hero__rotator-line {
+  opacity: 1;
+  transform: none;
+}
+
+/* section-enter — 진입 1회, 이동 24px */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity var(--dur-slower) var(--ease), transform var(--dur-slower) var(--ease);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* fixed-cta-slide — 200ms */
+.fixed-cta {
+  transform: translateY(100%);
+  transition: transform var(--dur-base) var(--ease);
+}
+
+.fixed-cta.is-shown {
+  transform: none;
+}
+
+/* cta-press — 150ms */
+.cta,
+.map__chip {
+  transition: transform var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.cta:active {
+  transform: scale(0.98);
+}
+
+/* card-hover — 150ms */
+.risk__card,
+.solution__type {
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .solution__type:hover {
+    border-color: var(--teal);
+  }
+}
+
+/* reduced-motion: 전부 0ms·정적 — §5-3 */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .fixed-cta {
+    transform: none;
+  }
+
+  .fixed-cta:not(.is-shown) {
+    visibility: hidden;
+  }
+
+  .hero__rotator[data-phase='out'] .hero__rotator-line {
+    opacity: 1;
+    transform: none;
+  }
+}

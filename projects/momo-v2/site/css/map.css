@@ -1,0 +1,688 @@
+/**
+ * 병원 지도 — V2_BUILD_SPEC §6-1 · §6-2 (DEV-3B)
+ * 색·크기는 전부 tokens.css 변수로만 쓴다. 지도 기본 레이아웃(.map__canvas 등)은
+ * sections.css 에 있고, 이 파일은 SVG 지도·배지·칩·범례·경로 표시만 다룬다.
+ */
+
+/* ============================ SVG 캔버스 ============================ */
+
+.map__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  touch-action: manipulation;
+}
+
+.map__area {
+  stroke: var(--map-none-stroke);
+  stroke-width: 1;
+  /* 확대해도 경계 두께가 두꺼워지지 않는다 — §6-2 */
+  vector-effect: non-scaling-stroke;
+  fill: var(--map-none);
+  cursor: pointer;
+  transition: fill var(--dur-base) var(--ease), fill-opacity var(--dur-base) var(--ease);
+}
+
+.map__area--none {
+  fill: var(--map-none);
+}
+
+.map__area--low {
+  fill: var(--map-low);
+}
+
+.map__area--mid {
+  fill: var(--map-mid);
+}
+
+.map__area--high {
+  fill: var(--map-high);
+}
+
+/* 선택: Fill navy (라벨·배지 반전은 아래 배지 규칙) — §6-2 */
+.map__area.is-selected {
+  fill: var(--map-selected);
+  stroke: var(--white);
+  stroke-width: 2;
+}
+
+/* 비선택 감쇠 — 라벨·배지는 별도 층이라 100% 로 남는다 */
+.map__layer.has-selection .map__area:not(.is-selected) {
+  fill-opacity: 0.45;
+}
+
+/* 병원 0곳 7개 시·도 — 선택 불가 */
+.map__area.is-empty {
+  cursor: default;
+}
+
+/* `.is-hover` 는 리스트 카드 hover·focus-within 이 켜는 같은 강조다 (§6-4, PC 한정) */
+.map__area:hover:not(.is-empty),
+.map__area.is-hover:not(.is-empty) {
+  stroke: var(--navy);
+  stroke-width: 2;
+  paint-order: stroke;
+}
+
+.map__area:focus-visible {
+  outline: none;
+  stroke: var(--navy);
+  stroke-width: 3;
+}
+
+/* SVG 층 숨김 — 구·시 층은 서울·경기 확대 중에만 보인다 */
+.map__layer.is-hidden {
+  display: none;
+}
+
+.map__hatch-line {
+  stroke: var(--navy);
+  stroke-width: 1;
+  stroke-opacity: 0.28;
+}
+
+.map__hatch {
+  pointer-events: none;
+}
+
+/* 소형 지역 투명 원 히트영역 44px — §6-2 */
+.map__hit {
+  fill: transparent;
+  stroke: none;
+  cursor: pointer;
+}
+
+.map__hit[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* ============================ 배지·지역명 ============================ */
+
+.map__badge-bg {
+  fill: var(--navy);
+  stroke: var(--white);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.map__badge-num {
+  fill: var(--white);
+  font-weight: var(--w-bold);
+  font-family: var(--font-sans);
+  pointer-events: none;
+}
+
+/* 선택 시 배지 반전(흰 배경 / navy 글자) + Gold 2px 밑줄 — §6-2 */
+.map__badge.is-selected .map__badge-bg {
+  fill: var(--white);
+  stroke: var(--navy);
+  stroke-width: 2;
+}
+
+.map__badge.is-selected .map__badge-num {
+  fill: var(--navy);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+.map__layer--badges {
+  pointer-events: none;
+}
+
+.map__name {
+  fill: var(--ink);
+  font-weight: var(--w-semibold);
+  font-family: var(--font-sans);
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--white);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+/* ============================ 툴팁 (마우스 전용) ============================ */
+
+.map__tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 8px));
+  max-width: 220px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--navy);
+  color: var(--white);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ============================ 시·도 · 구·시 칩 ============================ */
+
+.map__chips,
+.map__sub-chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 시·도 칩은 가로 스크롤 + sticky — §6-1 */
+.map__chips {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: var(--space-2) 0;
+  background: var(--white);
+}
+
+.map__sub-chips {
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+  overflow-x: visible;
+}
+
+.map__chip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--touch);
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  font-weight: var(--w-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.map__chip-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--slate-2);
+}
+
+.map__chip:hover:not(.is-empty) {
+  border-color: var(--teal);
+  background: var(--mint);
+}
+
+.map__chip.is-selected {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+.map__chip.is-selected .map__chip-count {
+  color: var(--white);
+}
+
+.map__chip.is-empty {
+  color: var(--slate-2);
+  background: var(--map-none);
+  cursor: default;
+}
+
+/* ============================ 범례 ============================ */
+
+/* SVG 밖 바로 아래 한 줄 — §6-2 */
+.map__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 28px;
+  flex-wrap: wrap;
+}
+
+.map__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--slate-2);
+}
+
+.map__legend-scope {
+  font-weight: var(--w-semibold);
+  color: var(--ink);
+}
+
+.map__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--map-none-stroke);
+  border-radius: 3px;
+  background: var(--map-none);
+}
+
+.map__swatch--low {
+  background: var(--map-low);
+}
+
+.map__swatch--mid {
+  background: var(--map-mid);
+}
+
+.map__swatch--high {
+  background: var(--map-high);
+  border-color: var(--map-high);
+}
+
+.map__swatch--selected {
+  background: var(--map-selected);
+  border-color: var(--map-selected);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+/* ============================ 경로 표시 · 미니 인셋 ============================ */
+
+.map__path {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin: var(--space-2) 0;
+}
+
+.map__path-step {
+  min-height: 32px;
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
+  color: var(--teal);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  font-weight: var(--w-semibold);
+  cursor: pointer;
+}
+
+.map__path-step[aria-current='true'] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.map__path-sep {
+  color: var(--slate-2);
+}
+
+/* 확대 시 우상단 미니 인셋 — PC·태블릿 96 / 모바일 72 (§6-2) */
+.map__inset {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 96px;
+  min-height: var(--touch);
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--navy);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--w-semibold);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.map__canvas {
+  position: relative;
+}
+
+/* ============================ 로드 실패 — §6-5 ============================ */
+
+.map__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-5);
+  background: var(--ivory);
+}
+
+.map__error p {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+}
+
+.map__retry {
+  min-height: var(--touch);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--teal);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--teal);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  font-weight: var(--w-semibold);
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .map__inset {
+    width: 72px;
+  }
+}
+
+/* ===================== 조건 요약 바 — §6-3 · §6-5 ===================== */
+
+.map__summary {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.map__summary-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.map__summary-label {
+  color: var(--navy);
+  font-weight: var(--w-semibold);
+}
+
+.map__summary-count {
+  color: var(--teal);
+  font-weight: var(--w-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ✕ 전체 해제 — 1탭 · 44px 이상 (§6-3) */
+.map__summary-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--navy);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  cursor: pointer;
+}
+
+.map__summary-whole {
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--teal);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--teal);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  font-weight: var(--w-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.map__summary-support {
+  color: var(--slate);
+}
+
+/* ======================= 리스트·카드 — §6-4 ======================= */
+
+.map__group {
+  display: block;
+}
+
+/* 시·도 그룹 헤더 — 모바일에서만 sticky (§6-4) */
+.map__group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) 0;
+  background: var(--ivory);
+  color: var(--navy);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: var(--w-bold);
+}
+
+.map__group-count {
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--w-semibold);
+}
+
+.map__card {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+}
+
+.map__card + .map__card {
+  margin-top: var(--space-3);
+}
+
+.map__card:hover,
+.map__card:focus-within {
+  border-color: var(--teal);
+  background: var(--ivory);
+}
+
+.map__card:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.map__card-region {
+  display: inline-block;
+  margin: 0 0 var(--space-2);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--mint);
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: var(--w-semibold);
+}
+
+.map__card-name {
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: var(--w-bold);
+}
+
+.map__card-doctor {
+  margin: var(--space-1) 0 0;
+  color: var(--ink);
+  font-size: var(--caption-size);
+  font-weight: var(--w-medium);
+}
+
+.map__card-addr {
+  margin: var(--space-1) 0 0;
+  color: var(--slate-2);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  font-weight: var(--w-regular);
+}
+
+.map__card-phone {
+  margin: var(--space-2) 0 0;
+  font-size: 16px;
+  font-weight: var(--w-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.map__card-tel {
+  color: var(--navy);
+}
+
+.map__mark {
+  background: var(--mint);
+  color: var(--teal);
+  font-weight: var(--w-semibold);
+}
+
+/* 버튼 2개 — 높이 44 · gap 8 · 375px 이상 가로 50% (§6-4) */
+.map__card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.map__btn {
+  display: inline-flex;
+  flex: 1 1 50%;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  font-weight: var(--w-semibold);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.map__btn--call {
+  border: 1px solid var(--teal);
+  background: var(--teal);
+  color: var(--white);
+}
+
+.map__btn--naver {
+  border: 1px solid var(--teal);
+  background: var(--white);
+  color: var(--teal);
+}
+
+@media (min-width: 375px) {
+  .map__card-actions {
+    flex-direction: row;
+  }
+}
+
+/* 더 보기 · 리스트 끝 · 0건 — §6-5 */
+.map__more,
+.map__back,
+.map__to-map {
+  min-height: var(--touch);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--teal);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--teal);
+  font-family: var(--font-sans);
+  font-size: var(--caption-size);
+  font-weight: var(--w-semibold);
+  cursor: pointer;
+}
+
+.map__more {
+  width: 100%;
+  margin-top: var(--space-4);
+}
+
+.map__end,
+.map__empty {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--ivory);
+}
+
+.map__end-text,
+.map__empty-text {
+  margin: 0 0 var(--space-3);
+  color: var(--ink);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+
+.map__empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* 플로팅 '지도로 돌아가기' — 리스트가 지도 아래로 스크롤됐을 때만 (§6-3) */
+.map__to-map {
+  position: fixed;
+  right: var(--gutter);
+  bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
+  display: none;
+  box-shadow: var(--shadow-card);
+  z-index: 3;
+}
+
+.map__to-map.is-shown {
+  display: block;
+}
+
+/* 태블릿 820: 카드 2열 — §6-1 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .map__group-head {
+    margin-bottom: var(--space-2);
+  }
+
+  .map__card + .map__card {
+    margin-top: 0;
+  }
+
+  .map__group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .map__group-head {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .map__group-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .map__to-map {
+    display: none;
+  }
+
+  .map__to-map.is-shown {
+    display: block;
+  }
+}
+
+/* 확대 전환은 JS 가 viewBox 를 보간한다(motion.css map-zoom 등재).
+   reduced-motion 에서는 0ms 로 즉시 전환한다 — §6-2 */
+@media (prefers-reduced-motion: reduce) {
+  .map__area,
+  .map__chip,
+  .map__card {
+    transition: none;
+  }
+}

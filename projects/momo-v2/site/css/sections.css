@@ -1,0 +1,664 @@
+/**
+ * 섹션 레이아웃 — V2_BUILD_SPEC §3 · §5 · §6-1
+ * 지도·리스트의 상호작용 스타일(선택·확대·카드 상태)은 DEV-2B css/map.css 에서 더한다.
+ * 이 파일은 7개 섹션 골격과 병원 안내 구간의 정적 틀까지만 담당한다.
+ */
+
+/* ============================= S1 hero ============================= */
+
+#hero {
+  background: var(--navy);
+  color: var(--white);
+  padding-block: var(--space-9) var(--space-8);
+}
+
+/**
+ * R1 — Navy 배경에서 제목·본문이 보이지 않던 결함 수정.
+ * base.css 의 `h1, h2, h3 { color: var(--navy) }` 와 `.caption/.notice { color: var(--slate) }`
+ * 가 그대로 상속돼 배경과 같은(또는 2.6:1 밖에 안 되는) 글자색이 됐다.
+ * `.section--navy` 는 클래스라 `.caption` 과 특정도가 겹쳐 이기지 못하므로
+ * id 선택자로 흰색 계열 토큰을 명시한다.
+ */
+#hero h1,
+#hero h2,
+#hero h3 {
+  color: var(--white);
+}
+
+#hero p,
+#hero li,
+#hero dt,
+#hero dd,
+#hero figcaption,
+#hero small,
+#hero .caption,
+#hero .notice {
+  color: var(--mint);
+}
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: var(--space-8);
+  align-items: center;
+}
+
+/* 회전 문구 영역은 높이 고정 — CLS 0 — §5-2 */
+.hero__rotator {
+  min-height: calc(var(--h3-line) * 2);
+  margin-bottom: var(--space-4);
+}
+
+.hero__rotator-line {
+  display: block;
+  font-size: var(--h3-size);
+  line-height: var(--h3-line);
+  font-weight: var(--w-semibold);
+  color: var(--mint);
+}
+
+.hero__rotator-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.hero__pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding-inline: var(--space-3);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--mint);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mint);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+
+.hero__sub {
+  margin-top: var(--space-4);
+  max-width: var(--measure);
+  color: var(--mint);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.hero__photo img {
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+/* 영상 facade — 초기 로드 시 youtube 요청 0건 — §4 S1 */
+.video {
+  margin-top: var(--space-7);
+  max-width: 720px;
+}
+
+.video__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--teal);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--navy);
+}
+
+.video__facade {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-5);
+  border: 0;
+  background: var(--navy);
+  color: var(--white);
+  text-align: center;
+}
+
+.video__play {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid var(--white);
+  display: grid;
+  place-items: center;
+}
+
+.video__label {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--mint);
+}
+
+.video__embed {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video__external {
+  margin-top: var(--space-2);
+  color: var(--mint);
+}
+
+/* ============================= S2 story ============================= */
+
+.story__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.story__list {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.story__item {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: var(--space-4);
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.story__term {
+  font-weight: var(--w-semibold);
+  color: var(--navy);
+}
+
+.story__photo img {
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+/* ============================= S3 risk ============================= */
+
+.risk__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+}
+
+/* Clay 는 상단 선 · 아이콘 · 카드 제목 한 줄에만 — §5-1 */
+.risk__card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--clay);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+
+.risk__card .icon {
+  stroke: var(--clay);
+}
+
+.risk__card-title {
+  margin-block: var(--space-3) var(--space-2);
+  color: var(--clay);
+  font-size: var(--h3-size);
+  line-height: var(--h3-line);
+  font-weight: var(--w-semibold);
+}
+
+.risk__outro {
+  margin-top: var(--space-6);
+  max-width: var(--measure);
+}
+
+/* ============================= S4 role ============================= */
+
+.role__table {
+  width: 100%;
+  margin-top: var(--space-6);
+  border-collapse: collapse;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.role__table th,
+.role__table td {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+}
+
+.role__table thead th {
+  background: var(--mint);
+  color: var(--navy);
+  font-weight: var(--w-semibold);
+}
+
+.role__table tbody th {
+  width: 120px;
+  color: var(--navy);
+  font-weight: var(--w-semibold);
+}
+
+.role__notice {
+  margin-top: var(--space-4);
+}
+
+/* ============================= S5 solution ============================= */
+
+.solution__emphasis {
+  margin-top: var(--space-4);
+  font-size: var(--h3-size);
+  line-height: var(--h3-line);
+  font-weight: var(--w-semibold);
+  color: var(--teal);
+}
+
+.solution__types {
+  margin-top: var(--space-7);
+}
+
+.solution__types-notice {
+  margin-block: var(--space-2) var(--space-5);
+}
+
+.solution__type-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.solution__type {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+
+.solution__type .icon {
+  stroke: var(--teal);
+}
+
+.solution__type-title {
+  margin-block: var(--space-3) var(--space-2);
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+  font-weight: var(--w-semibold);
+  color: var(--navy);
+}
+
+.solution__type-desc {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--slate);
+}
+
+.solution__actions {
+  margin-top: var(--space-7);
+}
+
+/* ===================== S6 hospital-map (정적 틀) ===================== */
+
+#hospital-map {
+  background: var(--mint);
+}
+
+.map__head {
+  max-width: var(--measure);
+}
+
+.map__subtitle {
+  margin-top: var(--space-3);
+}
+
+.map__relation {
+  margin-top: var(--space-2);
+}
+
+.map__hero-img {
+  margin-top: var(--space-5);
+  max-width: 420px;
+}
+
+.map__hero-img img {
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+.map__search {
+  margin-top: var(--space-6);
+}
+
+.map__search-input {
+  width: 100%;
+  min-height: var(--touch);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+}
+
+/* 시·도 칩 — 가로 스크롤 · sticky — §6-1 */
+.map__chips {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-block: var(--space-2);
+  overflow-x: auto;
+  background: var(--mint);
+  scrollbar-width: thin;
+}
+
+.map__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 744px) minmax(0, 504px);
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.map__canvas {
+  height: 640px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.map__panel {
+  display: flex;
+  flex-direction: column;
+  height: 640px;
+  min-height: 0;
+}
+
+/* 조건 요약 바 — 높이 56 — §6-1 */
+.map__summary {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--slate);
+}
+
+.map__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: var(--space-4);
+  overflow-y: auto;
+}
+
+/* 로드 전 고정 비율 스켈레톤 — CLS 0 — §6-4 */
+.map__skeleton {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+
+.map__canvas .map__skeleton,
+.map__list .map__skeleton {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+}
+
+.map__guide {
+  margin-top: var(--space-3);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  color: var(--slate);
+}
+
+.map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  min-height: 28px;
+  margin-top: var(--space-2);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--slate);
+}
+
+.map__foot {
+  margin-top: var(--space-6);
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--measure);
+}
+
+/* ============================= S7 closing ============================= */
+
+#closing {
+  background: var(--navy);
+  color: var(--white);
+  text-align: center;
+}
+
+/** R2 — #hero 와 같은 결함. 흰색 계열 토큰으로 override 한다 */
+#closing h1,
+#closing h2,
+#closing h3 {
+  color: var(--white);
+}
+
+#closing p,
+#closing li,
+#closing dt,
+#closing dd,
+#closing figcaption,
+#closing small,
+#closing .caption,
+#closing .notice {
+  color: var(--mint);
+}
+
+.closing__actions {
+  margin-top: var(--space-6);
+}
+
+.closing__support {
+  margin-top: var(--space-4);
+  color: var(--mint);
+}
+
+.closing__sign {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-7);
+  color: var(--mint);
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+}
+
+.closing__sign img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.closing__youtube {
+  display: block;
+  margin-top: var(--space-4);
+  color: var(--mint);
+}
+
+/* ============================= footer ============================= */
+
+.footer {
+  background: var(--navy);
+  color: var(--mint);
+  border-top: 1px solid var(--gold);
+  padding-block: var(--space-6);
+}
+
+.footer p {
+  font-size: var(--caption-size);
+  line-height: var(--caption-line);
+  max-width: var(--measure);
+}
+
+.footer p + p {
+  margin-top: var(--space-3);
+}
+
+/* ===================== 모바일 하단 고정 CTA — §4 ===================== */
+
+.fixed-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: none;
+  padding: var(--space-3) var(--gutter);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--white);
+  border-top: 1px solid var(--line);
+  box-shadow: var(--shadow-fixed);
+}
+
+.fixed-cta .cta {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .fixed-cta {
+    display: block;
+  }
+
+  /* 고지 문구를 가리지 않도록 본문 끝에 여백을 둔다 */
+  body.has-fixed-cta .footer {
+    padding-bottom: calc(var(--space-9) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ============================= 반응형 ============================= */
+
+/* 1024–1279: 지도 60% / 패널 40%, gap 24, 높이 600 — §6-1 */
+@media (max-width: 1279px) {
+  .map__layout {
+    grid-template-columns: 60fr 40fr;
+    gap: var(--space-5);
+  }
+
+  .map__canvas,
+  .map__panel {
+    height: 600px;
+  }
+}
+
+/* 태블릿 820: 1단, 지도 높이 520, 카드 2열 — §6-1 */
+@media (max-width: 1023px) {
+  .hero__grid,
+  .story__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .solution__type-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .map__canvas {
+    height: 520px;
+  }
+
+  .map__panel {
+    height: auto;
+  }
+
+  .map__list {
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  .risk__cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .story__item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .role__table,
+  .role__table thead,
+  .role__table tbody,
+  .role__table tr,
+  .role__table th,
+  .role__table td {
+    display: block;
+    width: auto;
+  }
+
+  .role__table thead {
+    display: none;
+  }
+
+  .role__table tr + tr {
+    margin-top: var(--space-4);
+  }
+
+  .role__table td::before {
+    content: attr(data-head) ' · ';
+    font-weight: var(--w-semibold);
+    color: var(--navy);
+  }
+
+  /* 모바일 순서: 검색 → 칩 → 지도 → 요약 바 → 리스트 — §6-1 */
+  .map__canvas {
+    height: 420px;
+  }
+
+  .map__hero-img {
+    max-width: none;
+  }
+}
+
+@media (max-width: 374px) {
+  .map__canvas {
+    height: 385px;
+  }
+
+  .solution__type-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
