@@ -1,0 +1,8 @@
+{
+  "name": "momo-hair-clinic-map",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "devDependencies": { "pretendard": "1.3.9", "sharp": "0.33.5" }
+}
