@@ -172,6 +172,7 @@ VTM OS 가 `PERMISSION_DENIED` 를 내면:
 - 개발 직군 추가 기준: `docs/dev-execution.md`
 - Executive Report 양식: `docs/executive-report.md`
 - 종결 판정 기준: `docs/closure-policy.md`
+- Vercel Preview 자율 생성·배포 계약: `docs/vercel-preview-autonomy.md` — 승인된 Work Order 의 Preview Project 생성·배포·readback 은 Human Gate 아님 (Production·billing·secret·삭제는 유지)
 - 라우팅 표: `docs/routing.md` — **HOLD.** 새 사업방향 확정 전까지 사용·재작성하지 않는다.
 
 ## HOLD 항목 (임의로 손대지 않는다)
