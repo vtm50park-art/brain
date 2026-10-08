@@ -83,6 +83,20 @@ GPT 측 Vercel connection 의 권한은 Claude 쪽에서 조회할 수단이 없
 Vercel App 설치(`vercel oauth-apps install --permission … --projects *`)의 권한 범위 중 프로젝트 생성을 허용하는 scope 가
 있는지는 문서에서 확인하지 못했다 — 확인 전에는 쓰지 않는다.
 
+
+### 5-2. 토큰 발급 경로 확정 (2026-10-08, Vercel CLI 63.0.2 소스 실측)
+
+- 본부장 실측: `npx vercel tokens create "vtm-preview-surface" --scope vtm50park-9052s-projects` →
+  "Cannot create tokens for this app." (Owner 계정, login PASS).
+- 원인(CLI 공식 패키지 `vercel@63.0.2` `dist/commands-bulk.js` 원문): "Creating a new token requires a classic personal
+  access token. Sessions from "vercel login" use OAuth and cannot call the create-token API." ·
+  "The Vercel API only allows creating personal tokens when the CLI is authenticated with a classic personal access token
+  (dashboard: Account → Settings → Tokens). OAuth login cannot mint new tokens." · 서버 판정 문구
+  "Only user authentication tokens can be used to create new tokens."
+- 결론: `vercel login`(OAuth) 세션 앱에는 토큰 발급 권한을 부여하는 설정이 구조적으로 없다. Vercel 공식 경로는
+  대시보드 토큰 화면 `https://vercel.com/account/tokens` (CLI 소스 상수 `VERCEL_ACCOUNT_TOKENS_URL`)에서 Owner 가 직접 발급하는 것이다.
+  발급한 토큰은 팀 `vtm50park-9052s-projects` 범위로, GitHub Actions secret `VERCEL_PREVIEW_TOKEN` 에만 저장한다.
+
 ## 6. 실행 규칙 (설정 후)
 
 1. 프로젝트 생성(§5 고정 워크플로): `framework: null`, Git 연결 없음, Vercel Authentication 끔, 이름은 산출물 전용.
