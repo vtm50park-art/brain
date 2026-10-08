@@ -46,31 +46,46 @@
 | project 생성 | `POST /v11/projects` → **403 "You don't have permission to create the project"** |
 | integration 설정 조회 | `GET /v1/integrations/configurations` → 403 |
 
-판정: Claude 의 Vercel connection 은 **선택한 일부 프로젝트로 제한된 Vercel App 설치 권한**으로 동작한다
-(Vercel 문서: App 설치는 권한 범위와 함께 `--projects <IDs>` 또는 `*`(전체)로 프로젝트를 제한할 수 있다).
-신규 프로젝트는 미리 선택해 둘 수 없으므로, 프로젝트가 제한된 설치에서는 생성 자체가 403 이다.
+판정(2026-10-08 정정): 403 은 Vercel API 서버의 권한 판정이다(응답 `code=forbidden action=create resource=project`,
+Vercel requestId 발급 — 로컬 승인 팝업 단계가 아님). 다만 **"Selected → All projects 로 바꾸면 해결된다"는 가설은 검증되지
+않았다.** 본부장 검증(2026-10-08): 공식 Vercel MCP 는 `mcp.vercel.com` OAuth 방식이고, 공식 Tools reference
+(`vercel.com/docs/agent-resources/vercel-mcp/tools`)에 신규 Project 생성 tool 이 없다. 따라서 이 connection 으로
+프로젝트를 만드는 경로는 공식 지원 경로로 쓰지 않는다.
 
-GPT 측 Vercel connection 의 권한은 Claude 쪽에서 조회할 수단이 없어 **실측하지 못했다**(ChatGPT 커넥터 설정은
-Claude connector · 저장소 · Drive 어디에도 기록이 없다). 비교는 Claude 측 실측값만으로 한다.
+Tool identity 실측(이 세션):
+- 도구 이름 공간 `mcp__Vercel__*`(claude.ai connector 이름 "Vercel"). 서버 URL·OAuth client 는 세션에서 조회 수단이 없다.
+- 공식 Tools reference 에 있는 이름(`search_vercel_documentation`, `web_fetch_vercel_url`, `get_access_to_vercel_url`,
+  `list_projects` 등)과 함께, reference 에 없는 REST 대응 도구(`create_project` 등 수백 개, 설명에 "CLI fallback",
+  오류에 `operation: "POST /v11/projects"`)가 노출된다. 즉 이 서버는 Vercel REST 를 이 connection 의 토큰으로 대리 호출한다.
+- `create_project` 는 공식 Tools reference 에 없는 도구다 — 공식 MCP 의 지원 기능으로 간주하지 않는다.
 
-## 5. 1회 설정 (ONE-TIME CONNECTOR AUTHORITY SETUP)
+GPT 측 Vercel connection 의 권한은 Claude 쪽에서 조회할 수단이 없어 **실측하지 못했다**.
 
-이 설정은 team OWNER(본부장)만 할 수 있다. 1회로 끝나고, 이후 개별 프로젝트마다 다시 요청하지 않는다.
+## 5. 1회 설정 — 공식 지원 경로 (Vercel REST API · CLI)
 
-1. Claude 의 Vercel 연결(claude.ai → Settings → Connectors → Vercel)을 다시 승인하면서,
-   team `vtm50park-9052s-projects` 의 프로젝트 접근을 **All projects(전체)** 로 선택한다.
-   (또는 Vercel 대시보드 → Team Settings → Integrations/Apps 에서 Claude 설치의 Project Access 를 All Projects 로 변경)
-2. 연결은 세션 시작 시 읽히므로, 변경 후 403 이 계속되면 새 세션에서 이어간다.
+공식 문서로 확인된 프로젝트 생성 경로:
+- REST `POST https://api.vercel.com/v11/projects?teamId=…` — `Authorization: Bearer <Vercel access token>`
+  (docs: Projects › Create a new project / Managing projects "Create a project with cURL")
+- CLI `vercel project add <name>` · 배포 `vercel deploy`(기본 preview, `--prod` 일 때만 production) (docs: CLI)
+- 토큰 발급: CLI `vercel tokens add <name>` 또는 REST `POST /v3/user/tokens` — `teamId`, `expiresAt`, `projectId`(선택)
+  지정 가능. projectId 로 묶은 토큰은 그 프로젝트 전용이라 **신규 프로젝트 생성에는 쓸 수 없다** → team 범위 토큰이 필요하다.
 
-최소권한 메모: Vercel 은 "새 프로젝트 생성만" 을 따로 주는 프로젝트 단위 범위가 없다 — 생성에는 전체 프로젝트 접근이
-필요하다. 그래서 기존 Production 프로젝트 보호는 Vercel 권한이 아니라 아래 두 장치로 지킨다.
-- 이 계약 §3 (Human Gate 목록)
-- brain `docs/permission-autonomy/settings.proposed.json` 의 deny 규칙: `request_promote` · `request_rollback` ·
-  rolling release · env 조회/생성/수정 · `update_project` · `pause_project` · 도메인 구매 · 프로젝트 삭제 링크
+최소권한 안(본부장 1회):
+1. team `vtm50park-9052s-projects` 범위, 만료일이 있는 Vercel access token 1개를 발급한다(이름 예: `vtm-preview-surface`).
+2. 그 값을 GitHub `vtm50park-art/vtm-os-next` 저장소의 Actions secret(예: `VERCEL_PREVIEW_TOKEN`)으로만 저장한다.
+   채팅·문서·로그에 붙여 넣지 않는다.
+3. 이후 서지윤이 그 secret 을 쓰는 고정 워크플로(preview-surface)를 만든다. 워크플로 코드가 허용 동작을 강제한다:
+   신규 프로젝트 생성(Git 연결 없음 · env 없음) · preview 배포(`--prod` 없음) · 상태 조회 · readback 만.
+   production · alias/domain · env · 삭제 · billing 호출은 코드에 없고, 입력 검증으로 거부한다.
+
+남는 위험(정직 기록): Vercel access token 은 발급자 역할(OWNER)의 권한을 가진다 — 동작 단위로 좁히는 토큰 범위는
+문서에서 확인되지 않았다. 그래서 최소권한은 토큰이 아니라 **secret 격리 + 고정 워크플로의 허용 동작 목록**으로 지킨다.
+Vercel App 설치(`vercel oauth-apps install --permission … --projects *`)의 권한 범위 중 프로젝트 생성을 허용하는 scope 가
+있는지는 문서에서 확인하지 못했다 — 확인 전에는 쓰지 않는다.
 
 ## 6. 실행 규칙 (설정 후)
 
-1. 프로젝트 생성: `framework: null`, Git 연결 없음, Vercel Authentication 끔, 이름은 산출물 전용.
+1. 프로젝트 생성(§5 고정 워크플로): `framework: null`, Git 연결 없음, Vercel Authentication 끔, 이름은 산출물 전용.
 2. 배포: 산출물 정적 파일만. `projectSettings` 대신 `vercel.json` 으로 build/output 지정. `target` 미지정(preview).
 3. readback: 레일이 직접 열어 2xx + 산출물 고유 문구(binding) 확인. index·css·js·data·이미지 각각 200.
 4. 결과 보고: 판정 댓글 `- Result URL:` + `- Artifact binding:` → employee-verdict 레일 → 총괄과장 Telegram.
