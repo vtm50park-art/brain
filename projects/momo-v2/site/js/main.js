@@ -38,9 +38,23 @@ function initCtas() {
   }
 }
 
+/** 숨김 기준 — 지도·마무리 구간이 뷰포트 높이의 이만큼을 덮으면 가린다 (§4 · X6) */
+const FIXED_CTA_HIDE_RATIO = 0.1;
+
+/** 요소가 뷰포트 안에서 실제로 차지하는 높이(px) */
+function visibleHeight(el) {
+  if (!el) return 0;
+  const rect = el.getBoundingClientRect();
+  return Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+}
+
 /**
  * 모바일 하단 고정 CTA — §4
- * 히어로를 벗어나면 노출, 병원 안내 구간(≥10% 교차)과 마무리 구간에서는 숨긴다.
+ * 히어로를 벗어나면 노출, 지도·마무리 구간이 뷰포트의 10% 이상 보이면 숨긴다.
+ *
+ * 숨김 기준은 '섹션 높이의 10%' 가 아니라 '뷰포트 높이의 10%' 다. 섹션 기준이면
+ * 리스트가 긴 시·도(서울 48곳 · 2,800px 이상)에서 지도 섹션 한가운데에서도 교차율이
+ * 10% 를 못 넘어 CTA 가 카드 글자를 덮었다 (DEV-4C).
  */
 function initFixedCta() {
   const fixed = document.querySelector('[data-role="fixed-cta"]');
@@ -48,34 +62,58 @@ function initFixedCta() {
 
   document.body.classList.add('has-fixed-cta');
 
-  const visible = { hero: true, map: false, closing: false };
+  const hero = document.getElementById('hero');
+  const map = document.getElementById(CTA_TARGET_ID);
+  const closing = document.getElementById('closing');
+
+  let heroVisible = true;
 
   const apply = () => {
     const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-    const show = isMobile && !visible.hero && !visible.map && !visible.closing;
+    // 뷰포트 높이가 0 으로 보고되는 환경에서 늘 숨김이 되지 않게 최소 1px 을 둔다
+    const limit = Math.max(1, window.innerHeight * FIXED_CTA_HIDE_RATIO);
+    const covered = visibleHeight(map) >= limit || visibleHeight(closing) >= limit;
+    const show = isMobile && !heroVisible && !covered;
+
     fixed.classList.toggle('is-shown', show);
     fixed.setAttribute('aria-hidden', String(!show));
+    // aria-hidden 만 주면 안의 버튼이 키보드 포커스를 받는다(axe aria-hidden-focus) — §8
+    if (show) fixed.removeAttribute('inert');
+    else fixed.setAttribute('inert', '');
   };
 
-  const watch = (id, key, threshold) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const observer = new IntersectionObserver(
+  // 히어로 구간 숨김은 그대로 — 교차 여부만 본다
+  if (hero) {
+    const heroObserver = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          visible[key] = entry.isIntersecting;
-        }
+        for (const entry of entries) heroVisible = entry.isIntersecting;
         apply();
       },
-      { threshold }
+      { threshold: 0 }
     );
-    observer.observe(el);
+    heroObserver.observe(hero);
+  }
+
+  // 긴 섹션에서도 10% 지점을 놓치지 않게 임계값을 촘촘히 둔다. 실제 비교는 apply() 가
+  // getBoundingClientRect 로 다시 하므로 임계값은 호출 시점만 만든다.
+  const DENSE = Array.from({ length: 51 }, (_, step) => step / 50);
+  const coverObserver = new IntersectionObserver(apply, { threshold: DENSE });
+  for (const el of [map, closing]) {
+    if (el) coverObserver.observe(el);
+  }
+
+  // 임계값 사이 구간은 스크롤로 메운다 — rAF 1회로 묶어 메인 스레드를 늘리지 않는다
+  let queued = false;
+  const onScroll = () => {
+    if (queued) return;
+    queued = true;
+    window.requestAnimationFrame(() => {
+      queued = false;
+      apply();
+    });
   };
 
-  watch('hero', 'hero', 0);
-  watch(CTA_TARGET_ID, 'map', 0.1);
-  watch('closing', 'closing', 0);
-
+  window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', apply, { passive: true });
   apply();
 }

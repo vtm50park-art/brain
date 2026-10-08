@@ -71,6 +71,10 @@
   /* 모바일 breakpoint — js/copy.js 의 MOBILE_BREAKPOINT 와 같은 값 — §5-4 */
   --bp-mobile: 768px;
 
+  /* 시·도 칩 줄 높이 — 칩 44px + 위아래 패딩 8px = 60px.
+     1단 레이아웃 그룹 헤더의 sticky top 이 이 값을 쓴다 (css/map.css, DEV-4C) */
+  --map-chips-h: 60px;
+
   /* 모션 — §5-3 (상세 표는 css/motion.css 상단) */
   --dur-fast: 150ms;
   --dur-base: 200ms;

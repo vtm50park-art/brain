@@ -395,9 +395,13 @@ function renderList(model, state, mobile) {
   for (const group of model.groups) {
     // 모바일은 시·도 sticky 그룹 헤더 — PC 는 CSS 로 sticky 를 끈다 (§6-4)
     const section = el('section', 'map__group');
-    const head = el('h3', 'map__group-head');
-    head.appendChild(el('span', '', group.sido));
-    head.appendChild(el('span', 'map__group-count', `${group.count}곳`));
+    const head = el('div', 'map__group-head');
+    const title = el('h3', 'map__group-title');
+    title.appendChild(el('span', '', group.sido));
+    title.appendChild(el('span', 'map__group-count', `${group.count}곳`));
+    head.appendChild(title);
+    // 1단 레이아웃 복귀 동선 — PC 2단은 지도가 늘 보이므로 CSS 로 숨긴다 (§6-3)
+    head.appendChild(button('map__group-back', MAP.listBackToMap, backToMap));
     section.appendChild(head);
     for (const card of group.cards) {
       const node = cardNode(card);
@@ -493,6 +497,12 @@ function scrollToMap() {
   });
 }
 
+/** 그룹 헤더 '지도로 돌아가기' — 같은 지도 위치로 이동하고 포커스를 지도 영역에 둔다 (§6-3) */
+function backToMap() {
+  scrollToMap();
+  dom?.canvas?.focus?.({ preventScroll: true });
+}
+
 /** 구·시 또는 비확대 시·도 선택 시 모바일에서 리스트로 자동 스크롤 (§6-3) */
 function maybeScrollToList(state, source) {
   if (!isMobile() || source === 'list') return;
@@ -502,17 +512,6 @@ function maybeScrollToList(state, source) {
     behavior: prefersReduced() ? 'auto' : 'smooth',
     block: 'start',
   });
-}
-
-/** 리스트가 지도 아래로 스크롤됐을 때만 플로팅 '지도로 돌아가기' (§6-3) */
-function updateBackButton() {
-  const back = dom?.back;
-  const canvas = dom?.canvas;
-  if (!back || !canvas) return;
-  const below = canvas.getBoundingClientRect().bottom < 0;
-  const show = isMobile() && below;
-  back.classList.toggle('is-shown', show);
-  back.hidden = !show;
 }
 
 /* ------------------------------ 해시 동기화 ------------------------------ */
@@ -584,21 +583,12 @@ export function initList() {
   if (!list) return;
 
   dom = {
-    section: document.getElementById('hospital-map'),
     list,
     summary: document.querySelector('[data-role="map-summary"]'),
     input: document.querySelector('[data-role="map-search"]'),
     canvas: document.querySelector('[data-role="map-canvas"]'),
     panel: list.closest('.map__panel') ?? list,
-    back: null,
   };
-
-  if (dom.section) {
-    const back = button('map__to-map', MAP.listBackToMap, scrollToMap);
-    back.hidden = true;
-    dom.section.appendChild(back);
-    dom.back = back;
-  }
 
   dom.input?.addEventListener('input', () => {
     const value = dom.input.value;
@@ -621,12 +611,10 @@ export function initList() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         render(currentState());
-        updateBackButton();
       }, 150);
     },
     { passive: true }
   );
-  window.addEventListener('scroll', updateBackButton, { passive: true });
 
   // 해시에 지도 상태가 있으면 즉시 로드한다 (§6-4)
   const hash = window.location.hash || '';

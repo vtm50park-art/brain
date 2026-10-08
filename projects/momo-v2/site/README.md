@@ -10,7 +10,8 @@
 | DEV-2A | `index.html` 7개 섹션 + footer + 모바일 고정 CTA, 토큰·기본·섹션·모션 CSS, 카피 정본, 히어로, 측정 훅, 데이터·문구·정적 제약 테스트 | 완료 |
 | DEV-3A | `js/lib/{normalize,alias,search,sort,state,hash,keynav,paginate}.js` 와 각 테스트, DEV-2A REWORK 3건(R1·R2 Navy 배경 글자색, R3 `momo.jpg` 참조 교체) | 완료 |
 | DEV-3B | `js/map.js` · `css/map.css` — 지도 SVG·칩·범례·확대·툴팁 배선 | 완료 |
-| DEV-3C | `js/list.js` — 검색 입력·조건 요약 바·리스트 카드 배선, 해시 동기화, 측정 훅 | 이 커밋 |
+| DEV-3C | `js/list.js` — 검색 입력·조건 요약 바·리스트 카드 배선, 해시 동기화, 측정 훅 | 완료 |
+| DEV-4B REWORK | `js/lib/labels.js` 신설 — 지역명을 배지 기준으로 충돌 회피 배치(교차 0). 복귀 동선은 fixed 플로팅 버튼 대신 1단 레이아웃 그룹 헤더 버튼 | 이 커밋 |
 
 `hospital-map` 섹션은 DEV-2A 에서 제목·부제·고지·이미지·검색 입력·칩 자리·지도 자리·요약 바 자리·리스트 자리·주의문까지 **정적 마크업만** 두었고, DEV-3A 가 그 동작의 **계산 부분만** DOM 없이 순수 모듈로 구현했다. DEV-3B·DEV-3C 는 그 순수 모듈을 DOM 에 배선한다.
 
@@ -54,6 +55,7 @@ js/lib/state.js         `{sido, sub, q, visible}` 순수 reducer (재선택 해�
 js/lib/hash.js          `#map=<code>&sub=&q=` 직렬화·파싱 (무효값 무시)
 js/lib/keynav.js        bb 중심 기준 방향키 최근접 이동, Home·End
 js/lib/paginate.js      PAGE_SIZE 20, 남은 수, 시·도 그룹 묶음
+js/lib/labels.js        지역명 배치 — 배지 기준 아래·위·오른쪽·왼쪽 후보, 배지 원·지역명 상자 교차 0
 tests/                  node --test 용 검증
 assets/ · data/         제공 입력 — 수정하지 않는다
 ```

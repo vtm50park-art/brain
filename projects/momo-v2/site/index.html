@@ -5,12 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- 공개 전 프리뷰 — V2_BUILD_SPEC §8 -->
     <meta name="robots" content="noindex, nofollow" />
+    <!-- favicon 파일을 따로 두지 않는다 — 빈 data URI 로 브라우저의 /favicon.ico 기본
+         요청(404 콘솔 오류)을 막는다 -->
+    <link rel="icon" href="data:," />
     <title>탈모, 어디 병원부터 가야 할까요? · 모모형 추천 병원 안내</title>
     <meta
       name="description"
       content="19년 탈모 1등 가이드 모모형이 추천하는 전국 10개 시·도 탈모 진료 병원 89곳을 지역별로 확인하세요."
     />
-    <link rel="stylesheet" href="assets/fonts/pretendard.css" />
+    <!-- 폰트 CSS 는 첫 페인트를 막지 않는다 — woff2 12개(약 300KB)가 LCP 앞을 막고 있었다.
+         window load 뒤에 stylesheet link 를 주입하고, 스크립트가 없으면 noscript 가 그대로 받는다 (§7) -->
+    <script>
+      window.addEventListener('load', function () {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'assets/fonts/pretendard.css';
+        document.head.appendChild(link);
+      });
+    </script>
+    <noscript><link rel="stylesheet" href="assets/fonts/pretendard.css" /></noscript>
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/sections.css" />
@@ -372,17 +385,14 @@
                 data-role="map-canvas"
                 role="group"
                 aria-label="전국 병원 분포 지도"
+                tabindex="-1"
               >
                 <div class="map__skeleton" aria-hidden="true"></div>
                 <!-- 미니 인셋 자리 — 서울·경기 확대 중에만 노출 -->
-                <button
-                  class="map__inset"
-                  type="button"
-                  data-role="map-inset"
-                  aria-label="전국 지도로 돌아가기"
-                  hidden
-                >
-                  전국 지도
+                <!-- 보이는 글자 '전국 지도' + 숨은 꼬리 = 접근 이름 '전국 지도로 돌아가기' (§6-5).
+                     aria-label 로 덮으면 보이는 글자와 접근 이름이 어긋난다 (DEV-4C) -->
+                <button class="map__inset" type="button" data-role="map-inset" hidden>
+                  전국 지도<span class="sr-only">로 돌아가기</span>
                 </button>
               </div>
               <p class="map__guide" data-role="map-guide" aria-live="polite">
@@ -477,6 +487,7 @@
       role="region"
       aria-label="빠른 이동"
       aria-hidden="true"
+      inert
     >
       <button class="cta" type="button" data-cta-position="fixed">내 지역 병원 찾기</button>
     </div>

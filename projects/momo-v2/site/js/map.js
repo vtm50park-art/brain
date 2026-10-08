@@ -14,6 +14,7 @@ import { ACTIONS, reduce, initialState } from './lib/state.js';
 import { sidoByShort } from './lib/alias.js';
 import { filterClinics, regionCounts } from './lib/search.js';
 import { nextByKey, handlesKey, centerOf } from './lib/keynav.js';
+import { placeRegionLabels } from './lib/labels.js';
 import { track, TRACK_EVENTS } from './lib/track.js';
 
 /* ============================ 순수 영역 ============================ */
@@ -83,15 +84,35 @@ export function shouldHideRegionLabel(width, height) {
   return w < LABEL_MIN_WIDTH || h < LABEL_MIN_HEIGHT;
 }
 
-/** viewBox 기준 user 단위 크기 → CSS 픽셀 크기 */
-export function renderedSize(bb, viewBox, pixelSize) {
-  if (!Array.isArray(bb) || bb.length !== 4 || !Array.isArray(viewBox) || viewBox.length !== 4) {
-    return null;
-  }
+/**
+ * `preserveAspectRatio="xMidYMid meet"` 의 실제 축척 — user 단위 1개가 몇 CSS 픽셀인지의 역수 (§6-2)
+ *
+ * meet 는 viewBox 전체가 들어가도록 가로·세로 중 **먼저 차는 쪽**에 맞춘다. 그래서
+ * 축척은 `viewBox[2] / 픽셀 폭` 단독이 아니라 두 비율의 최댓값이다. 세로가 먼저 차는
+ * 캔버스에서 폭 기준만 쓰면 배지·글자·히트영역이 정본보다 작게 렌더된다.
+ */
+export function meetScale(viewBox, pixelSize) {
+  if (!Array.isArray(viewBox) || viewBox.length !== 4) return null;
   const [, , vw, vh] = viewBox;
   const [pw, ph] = Array.isArray(pixelSize) ? pixelSize : [pixelSize, pixelSize];
   if (!(vw > 0) || !(vh > 0) || !(pw > 0) || !(ph > 0)) return null;
-  return { width: ((bb[2] - bb[0]) / vw) * pw, height: ((bb[3] - bb[1]) / vh) * ph };
+  return Math.max(vw / pw, vh / ph);
+}
+
+/** viewBox 사각형 — 지역명 경계로 쓴다(확대 중에는 확대된 영역) (§6-2) */
+export function viewBoxBounds(viewBox) {
+  if (!Array.isArray(viewBox) || viewBox.length !== 4) return null;
+  const [x, y, width, height] = viewBox;
+  if (!(width > 0) || !(height > 0)) return null;
+  return { x, y, width, height };
+}
+
+/** viewBox 기준 user 단위 크기 → CSS 픽셀 크기 */
+export function renderedSize(bb, viewBox, pixelSize) {
+  if (!Array.isArray(bb) || bb.length !== 4) return null;
+  const scale = meetScale(viewBox, pixelSize);
+  if (!scale) return null;
+  return { width: (bb[2] - bb[0]) / scale, height: (bb[3] - bb[1]) / scale };
 }
 
 /** 황금각 — 좌표가 완전히 같을 때도 결정적으로 갈라지게 하는 밀어내기 방향 */
@@ -243,6 +264,92 @@ export function guideTextOf(state, count) {
   return MAP.guideSido(full, count);
 }
 
+/** 시·도 칩 줄 첫 칩 글자 — 경로 표시의 '전국' 과 같은 말이다 (§6-1) */
+export const ALL_CHIP_LABEL = '전국';
+
+/** 칩 접근 이름은 보이는 글자 그대로다 — aria-label 없이 '서울 48' 이 되어야 한다 (§6-1) */
+export const chipAccessibleName = (label, count) => `${label} ${count}`;
+
+/** 병원 수 내림차순, 같으면 이름순 — 칩 줄·칩 순서의 유일한 기준이다 (§6-1) */
+const byCountThenName = (a, b) => b.total - a.total || a.name.localeCompare(b.name, 'ko');
+
+/**
+ * 시·도 칩 줄 모델 (§6-1)
+ * - 첫 칩은 '전국' + 전체 병원 수(검색 중에는 결과 수), `selectedSido` 가 없을 때 선택 표시
+ * - 이어서 전체 기준 병원이 있는 시·도만 전체 병원 수 많은 순(같으면 이름순)
+ * - 전체 기준 0곳인 시·도는 칩 줄에 넣지 않는다(지도 위 비활성 처리는 그대로)
+ * - 검색 결과로 0이 된 칩은 순서를 바꾸지 않고 `disabled` 만 받는다
+ *
+ * @param {{name: string}[]} features data.map.prov
+ * @param {Map<string, number>} totals 검색 전 시·도별 병원 수
+ * @param {Map<string, number>} counts 현재 기준 시·도별 병원 수
+ * @param {string|null} selectedSido
+ */
+export function sidoChipModel(features, totals, counts, selectedSido = null) {
+  const items = (Array.isArray(features) ? features : [])
+    .map((feature) => ({
+      name: feature.name,
+      total: totals?.get(feature.name) ?? 0,
+      count: counts?.get(feature.name) ?? 0,
+    }))
+    .filter((item) => item.total > 0)
+    .sort(byCountThenName);
+
+  const all = items.reduce((sum, item) => sum + item.count, 0);
+
+  return [
+    { scope: 'all', name: null, label: ALL_CHIP_LABEL, count: all, selected: !selectedSido, disabled: false },
+    ...items.map((item) => ({
+      scope: 'sido',
+      name: item.name,
+      label: item.name,
+      count: item.count,
+      selected: item.name === selectedSido,
+      disabled: item.count === 0,
+    })),
+  ];
+}
+
+/**
+ * 구·시 칩 줄 모델 — 시·도 칩 줄과 같은 규칙이다 (§6-1)
+ * 첫 칩은 '{서울|경기} 전체' + 해당 시·도 병원 수이고, 누르면 구·시 선택만 해제한다.
+ *
+ * @param {string} sido 확대 중인 시·도 짧은 이름
+ * @param {{name: string}[]} features data.map.seoul · data.map.gg
+ * @param {Map<string, number>} totals 검색 전 `시·도/구·시` 별 병원 수
+ * @param {Map<string, number>} counts 현재 기준 `시·도/구·시` 별 병원 수
+ */
+export function subChipModel(sido, features, totals, counts, options = {}) {
+  const { selectedSub = null, sidoCount = 0 } = options;
+  const items = (Array.isArray(features) ? features : [])
+    .map((feature) => ({
+      name: feature.name,
+      total: totals?.get(`${sido}/${feature.name}`) ?? 0,
+      count: counts?.get(`${sido}/${feature.name}`) ?? 0,
+    }))
+    .filter((item) => item.total > 0)
+    .sort(byCountThenName);
+
+  return [
+    {
+      scope: 'sub-all',
+      name: null,
+      label: `${sido} 전체`,
+      count: sidoCount,
+      selected: !selectedSub,
+      disabled: false,
+    },
+    ...items.map((item) => ({
+      scope: 'sub',
+      name: item.name,
+      label: item.name,
+      count: item.count,
+      selected: item.name === selectedSub,
+      disabled: item.count === 0,
+    })),
+  ];
+}
+
 /* ============================ DOM 영역 ============================ */
 
 const RETRY_LIMIT = 3;
@@ -306,6 +413,19 @@ function countsFor() {
 
 const provCount = (counts, name) => counts.sido.get(name) ?? 0;
 const subCount = (counts, sido, name) => counts.sub.get(`${sido}/${name}`) ?? 0;
+
+let totals = null;
+let totalsSource = null;
+
+/** 검색 전 전체 기준 지역 수 — 칩 줄 포함 여부·순서의 기준이라 검색어에 흔들리지 않는다 (§6-1) */
+function totalCounts() {
+  const clinics = data?.clinics ?? [];
+  if (totalsSource !== clinics) {
+    totalsSource = clinics;
+    totals = regionCounts(clinics);
+  }
+  return totals;
+}
 
 /* ------------------------------ 지도 SVG ------------------------------ */
 
@@ -519,7 +639,7 @@ function paintOverlays(counts) {
   }
 
   const px = pixelSize();
-  const scale = viewBox && viewBox[2] > 0 ? viewBox[2] / px[0] : 1;
+  const scale = meetScale(viewBox, px) ?? 1;
   const placed = placeBadges(seeds, {
     radius: BADGE_RADIUS * scale,
     gap: BADGE_GAP * scale,
@@ -555,22 +675,43 @@ function paintOverlays(counts) {
     dom.layers.badges.appendChild(group);
   }
 
+  // 지역명 후보 — 병원 0곳 지역은 그리지 않고, 렌더 크기 미달이면 숨긴다.
+  // 선택 지역은 렌더 크기 규칙에서 빼고 항상 표시한다 (§6-2)
+  const labelRegions = [];
+  for (const [name, info] of meta) {
+    if (info.count <= 0) continue;
+    const selected = zoomed ? state.sub === name : state.sido === name;
+    if (!selected) {
+      const size = renderedSize(info.bb, viewBox, px);
+      if (!size || shouldHideRegionLabel(size.width, size.height)) continue;
+    }
+    labelRegions.push({ name, count: info.count, selected });
+  }
+
+  // 배지 위치 기준 충돌 회피 배치 — 배지·다른 지역명과 겹치는 자리는 쓰지 않는다 (§6-2)
+  // 경계는 지도 전체가 아니라 **지금 보이는 viewBox 사각형**이다 — 확대 중에 지도
+  // 전체를 경계로 쓰면 화면 밖에 지역명이 놓인다 (§6-2)
+  const labels = placeRegionLabels(placed, labelRegions, {
+    radius: BADGE_RADIUS * scale,
+    fontSize: 12 * scale,
+    bounds: viewBoxBounds(viewBox) ?? { width: data.map.W, height: data.map.H },
+  });
+  for (const label of labels) {
+    const text = svgEl('text', {
+      x: label.x,
+      y: label.y,
+      class: 'map__name',
+      'text-anchor': 'middle',
+      'dominant-baseline': 'central',
+      'font-size': 12 * scale,
+    });
+    text.textContent = label.name;
+    dom.layers.labels.appendChild(text);
+  }
+
   for (const [name, info] of meta) {
     const size = renderedSize(info.bb, viewBox, px);
     if (!size) continue;
-
-    // 렌더 폭 40px 미만 또는 높이 28px 미만이면 지역명을 숨긴다 (§6-2)
-    if (!shouldHideRegionLabel(size.width, size.height)) {
-      const label = svgEl('text', {
-        x: info.center[0],
-        y: info.center[1] + BADGE_RADIUS * scale * 1.6,
-        class: 'map__name',
-        'text-anchor': 'middle',
-        'font-size': 12 * scale,
-      });
-      label.textContent = name;
-      dom.layers.labels.appendChild(label);
-    }
 
     // 소형 지역 투명 원 히트영역 44px (§6-2)
     if (size.width < HIT_TARGET || size.height < HIT_TARGET) {
@@ -590,15 +731,23 @@ function paintOverlays(counts) {
 
 /* ------------------------------ 칩·범례·경로 ------------------------------ */
 
-function chipButton(label, count, { selected, disabled }) {
-  const chip = el('button', `map__chip${selected ? ' is-selected' : ''}`);
+/**
+ * 칩 1개 — aria-label 을 두지 않는다. 지역명 span 과 숫자 span 사이에 공백 텍스트를 두어
+ * 보이는 글자가 곧 접근 이름('서울 48')이 되게 한다(axe label-content-name-mismatch 0건 — §6-1).
+ * 선택 상태는 aria-pressed 로만 알린다.
+ */
+function chipButton(item) {
+  const chip = el('button', `map__chip${item.selected ? ' is-selected' : ''}`);
   chip.type = 'button';
-  chip.appendChild(el('span', '', label));
-  chip.appendChild(el('span', 'map__chip-count', String(count)));
-  chip.setAttribute('aria-pressed', String(selected));
-  if (disabled) {
+  chip.appendChild(el('span', '', item.label));
+  chip.appendChild(document.createTextNode(' '));
+  chip.appendChild(el('span', 'map__chip-count', String(item.count)));
+  chip.setAttribute('aria-pressed', String(item.selected));
+  chip.dataset.scope = item.scope;
+  if (item.name) chip.dataset.name = item.name;
+  // 검색 결과로 0이 된 칩은 자리를 지키고 aria-disabled · 감쇠 스타일만 받는다
+  if (item.disabled) {
     chip.setAttribute('aria-disabled', 'true');
-    chip.setAttribute('tabindex', '-1');
     chip.classList.add('is-empty');
   }
   return chip;
@@ -607,21 +756,8 @@ function chipButton(label, count, { selected, disabled }) {
 function renderChips(counts) {
   const host = dom.chips;
   clear(host);
-  for (const feature of data.map.prov) {
-    const count = provCount(counts, feature.name);
-    const chip = chipButton(feature.name, count, {
-      selected: state.sido === feature.name,
-      disabled: count === 0,
-    });
-    chip.dataset.name = feature.name;
-    chip.setAttribute(
-      'aria-label',
-      count === 0
-        ? `${feature.name}, ${MAP.emptyRegion}`
-        : `${feature.name} 병원 ${count}곳`
-    );
-    host.appendChild(chip);
-  }
+  const items = sidoChipModel(data.map.prov, totalCounts().sido, counts.sido, state.sido);
+  for (const item of items) host.appendChild(chipButton(item));
 }
 
 function renderSubChips(counts) {
@@ -633,16 +769,11 @@ function renderSubChips(counts) {
   if (!zoomed) return;
 
   const features = data.map[state.sido === '서울' ? 'seoul' : 'gg'] ?? [];
-  for (const feature of features) {
-    const count = subCount(counts, state.sido, feature.name);
-    const chip = chipButton(feature.name, count, {
-      selected: state.sub === feature.name,
-      disabled: count === 0,
-    });
-    chip.dataset.name = feature.name;
-    chip.dataset.scope = 'sub';
-    host.appendChild(chip);
-  }
+  const items = subChipModel(state.sido, features, totalCounts().sub, counts.sub, {
+    selectedSub: state.sub,
+    sidoCount: provCount(counts, state.sido),
+  });
+  for (const item of items) host.appendChild(chipButton(item));
 }
 
 /** 범례는 SVG 밖 한 줄이고, 확대 시 구·시 기준으로 교체된다 (§6-2) */
@@ -806,6 +937,21 @@ function resetAll() {
   track(TRACK_EVENTS.MAP_RESET);
 }
 
+/** '전국' 칩 — 시·도·구·시 선택만 해제하고 검색어는 유지한다 (§6-1) */
+function clearRegion(source) {
+  if (!state.sido && !state.sub) return;
+  roving = null;
+  dispatch({ type: ACTIONS.SELECT_SIDO, sido: null }, source);
+  track(TRACK_EVENTS.MAP_RESET);
+}
+
+/** '{시·도} 전체' 칩 — 구·시 선택만 해제한다 (§6-1) */
+function clearSub(source) {
+  if (!state.sub) return;
+  // 같은 구·시 재선택 = 해제 (js/lib/state.js)
+  dispatch({ type: ACTIONS.SELECT_SUB, sub: state.sub }, source);
+}
+
 function showTooltip(target) {
   if (!tooltipAllowed || !dom.tooltip) return;
   const label = target.getAttribute('aria-label');
@@ -884,13 +1030,15 @@ function bindChrome() {
   dom.chips.addEventListener('click', (event) => {
     const chip = event.target.closest('.map__chip');
     if (!chip || chip.getAttribute('aria-disabled') === 'true') return;
-    selectSido(chip.dataset.name, 'chip');
+    if (chip.dataset.scope === 'all') clearRegion('chip');
+    else selectSido(chip.dataset.name, 'chip');
   });
 
   dom.subChips?.addEventListener('click', (event) => {
     const chip = event.target.closest('.map__chip');
     if (!chip || chip.getAttribute('aria-disabled') === 'true') return;
-    selectSub(chip.dataset.name, 'chip');
+    if (chip.dataset.scope === 'sub-all') clearSub('chip');
+    else selectSub(chip.dataset.name, 'chip');
   });
 
   dom.path?.addEventListener('click', (event) => {

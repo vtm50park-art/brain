@@ -171,11 +171,14 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* 시·도 칩은 가로 스크롤 + sticky — §6-1 */
+/* 시·도 칩은 가로 스크롤 + sticky — §6-1
+   높이는 칩 44px(--touch) + 위아래 패딩 8px 두 번 = 60px 이다. 1단 레이아웃의 그룹 헤더가
+   이 줄 바로 아래에 붙어야 하므로 높이를 변수(--map-chips-h)로 묶는다 (DEV-4C) */
 .map__chips {
   position: sticky;
   top: 0;
   z-index: 3;
+  min-height: var(--map-chips-h);
   padding: var(--space-2) 0;
   background: var(--white);
 }
@@ -210,9 +213,13 @@
   color: var(--slate-2);
 }
 
-.map__chip:hover:not(.is-empty) {
-  border-color: var(--teal);
-  background: var(--mint);
+/* hover 는 포인터 기기에서만 적용한다 — 터치에서 sticky hover 가 남는 것을 막는다.
+   선택 칩은 제외한다: mint 배경이 navy 배경·흰 글자를 덮으면 대비가 1.12:1 로 떨어진다 (§6-1) */
+@media (hover: hover) {
+  .map__chip:hover:not(.is-empty):not(.is-selected) {
+    border-color: var(--teal);
+    background: var(--mint);
+  }
 }
 
 .map__chip.is-selected {
@@ -343,6 +350,12 @@
   position: relative;
 }
 
+/* 복귀 동선이 포커스를 지도 영역에 옮겼을 때 위치가 보여야 한다 (§6-3) */
+.map__canvas:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+
 /* ============================ 로드 실패 — §6-5 ============================ */
 
 .map__error {
@@ -443,11 +456,16 @@
 
 /* ======================= 리스트·카드 — §6-4 ======================= */
 
+/* 뷰포트 밖 그룹은 렌더에서 제외한다 — 폰트 woff2 가 하나씩 도착할 때마다 병원 89장
+   전체가 재배치되며 메인 스레드를 막던 것을 끊는다. 다른 섹션에는 주지 않는다:
+   문서 높이가 추정치로 바뀌면 CTA 가 이동할 위치가 어긋난다 (DEV-4C) */
 .map__group {
   display: block;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
 }
 
-/* 시·도 그룹 헤더 — 모바일에서만 sticky (§6-4) */
+/* 시·도 그룹 헤더 — 1단 레이아웃에서만 sticky (§6-3 · §6-4) */
 .map__group-head {
   display: flex;
   align-items: center;
@@ -456,10 +474,34 @@
   margin: 0 0 var(--space-3);
   padding: var(--space-2) 0;
   background: var(--ivory);
+}
+
+.map__group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
   color: var(--navy);
   font-size: var(--caption-size);
   line-height: var(--caption-line);
   font-weight: var(--w-bold);
+}
+
+/* 그룹 헤더 복귀 버튼 — PC 2단은 지도가 늘 보이므로 숨긴다 (§6-3) */
+.map__group-back {
+  display: none;
+  flex: 0 0 auto;
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--teal);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--teal);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--w-semibold);
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .map__group-count {
@@ -531,7 +573,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 번호 텍스트 자체가 tel: 링크다(§6-4). 글자 높이 19px 로는 WCAG 2.5.8 target-size
+   24px 에 미달하므로 글자 크기·색·밑줄은 그대로 두고 터치 영역만 24px 로 넓힌다 */
 .map__card-tel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: var(--navy);
 }
 
@@ -585,8 +632,7 @@
 
 /* 더 보기 · 리스트 끝 · 0건 — §6-5 */
 .map__more,
-.map__back,
-.map__to-map {
+.map__back {
   min-height: var(--touch);
   padding: 0 var(--space-5);
   border: 1px solid var(--teal);
@@ -626,18 +672,24 @@
   gap: var(--space-2);
 }
 
-/* 플로팅 '지도로 돌아가기' — 리스트가 지도 아래로 스크롤됐을 때만 (§6-3) */
-.map__to-map {
-  position: fixed;
-  right: var(--gutter);
-  bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
-  display: none;
-  box-shadow: var(--shadow-card);
-  z-index: 3;
-}
+/* 1단 레이아웃(1023px 이하) 복귀 동선 — 그룹 헤더가 리스트 영역 안에서만 sticky 다.
+   헤더 높이는 버튼을 담도록 최소 44px 이고, 버튼은 이때만 보인다 (§6-3)
 
-.map__to-map.is-shown {
-  display: block;
+   sticky top 은 0 이 아니라 시·도 칩 줄 높이다. 칩 줄(z-index 3)이 그룹 헤더(z-index 1)
+   보다 위라, top 0 이면 헤더가 칩 줄 밑으로 들어가 '지도로 돌아가기' 버튼이 가려졌다 (DEV-4C) */
+@media (max-width: 1023px) {
+  .map__group-head {
+    position: sticky;
+    top: var(--map-chips-h);
+    z-index: 1;
+    min-height: var(--touch);
+  }
+
+  .map__group-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* 태블릿 820: 카드 2열 — §6-1 */
@@ -662,18 +714,11 @@
 }
 
 @media (max-width: 767px) {
-  .map__group-head {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-
-  .map__to-map {
-    display: none;
-  }
-
-  .map__to-map.is-shown {
-    display: block;
+  /* 모바일에서는 구·시 칩도 줄바꿈 없이 한 줄 가로 스크롤이다 — 칩 줄이 화면 절반을
+     먹지 않게 한다. PC 패널(768px↑)에서는 기본 규칙의 줄바꿈을 그대로 쓴다 (§6-1) */
+  .map__sub-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 }
 
