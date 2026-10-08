@@ -570,14 +570,24 @@
 
 /* 1024–1279: 지도 60% / 패널 40%, gap 24, 높이 600 — §6-1 */
 @media (max-width: 1279px) {
+  /*
+   * DEV-4E REWORK — `60fr 40fr` 는 fr 트랙의 최소값이 내용 최소 폭이라
+   * 패널 내용(약 1200px)이 지도 칸을 64px 까지 밀어냈다(1024·1100px 실측).
+   * minmax(0, …) 로 최소값을 0 으로 내리고 패널에 min-width: 0 을 줘야
+   * 60%/40% 비율이 실제로 지켜진다.
+   */
   .map__layout {
-    grid-template-columns: 60fr 40fr;
+    grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
     gap: var(--space-5);
   }
 
   .map__canvas,
   .map__panel {
     height: 600px;
+  }
+
+  .map__panel {
+    min-width: 0;
   }
 }
 
