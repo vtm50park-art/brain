@@ -33,6 +33,23 @@
 **테스트되지 않은 상태를 PASS 로 적지 않는다.**
 **코드 작성만으로 `COMPLETE` 를 쓰지 않는다.** (`docs/dev-execution.md` 참조)
 
+## HUMAN-VIEWABLE RESULT LINK CONTRACT (영구 규칙, 2026-10-08 본부장 지시)
+
+정본: vtm-os-next `governance/HUMAN_VIEWABLE_RESULT_LINK_CONTRACT.md` (`human-viewable-result-link/v1`).
+모든 직원 Work Order · Client Delivery · Preview · Creative · Development 결과물에 공통 적용한다.
+
+1. 본부장이 눈으로 확인해야 하는 결과물(웹페이지 · 랜딩 · Preview · 디자인 · 이미지 · 영상 · 문서)의 보고는
+   **클릭해서 바로 열리는 실제 결과물 URL(또는 canonical viewer link)** 을 반드시 포함한다.
+2. SHA · fingerprint · digest · work_order_id · 이슈 번호는 감사 evidence 다. 결과물을 대체하지 못하고 맨 뒤에 둔다.
+3. "READY" 같은 내부 상태값은 URL 이 아니다.
+4. **destination readback(실제 HTTP 접근 확인) PASS 한 URL 이 없으면** PREVIEW READY · COMPLETE · QA PASS ·
+   FINAL PASS 를 본부장에게 보고하지 않는다.
+5. 보고 순서(Telegram 포함): ① 무엇을 만들었는지 → ② 결과물 URL → ③ 검수 상태(PREVIEW / QA PASS / FINAL PASS)
+   → ④ 핵심 변경사항 → ⑤ QA · 비교 결과 → ⑥ 남은 HOLD → ⑦ 내부 evidence.
+6. 총괄과장 Telegram 최종 보고는 `[CHIEF_OF_STAFF VERDICT]` 판정 댓글에 아래 필드를 적어 employee-verdict 레일로
+   보낸다. 레일이 URL 을 직접 열어 2xx 를 확인해야(readback) 발송된다.
+   `- Human-viewable: YES` · `- Result URL:` · `- Result state:` · `- What:` · `- Change:` · `- QA:` · `- HOLD:`
+
 ## 양식
 
 ```markdown
@@ -55,7 +72,8 @@
 | 1 |  | PASS / FAIL |  |
 
 ## 5. 최종 산출물
-- URL:
+- URL: (Human-viewable 결과물이면 필수 — readback PASS 한 실제 링크. 없으면 COMPLETE 불가)
+- readback: PASS / FAIL (HTTP 상태 · 확인 시각)
 - Drive:
 - Deployment:
 

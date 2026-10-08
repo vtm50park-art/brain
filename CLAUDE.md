@@ -99,6 +99,11 @@ VTM OS 가 `PERMISSION_DENIED` 를 내면:
 - 그 외 진행 상황은 중간보고하지 않는다.
 - 완료 시 Executive Report 를 `09_COMPANY_BRAIN/07_Executive_Reports/` 에 저장하고 보고한다.
 - 양식: `docs/executive-report.md`
+- **결과물 링크 계약(영구, 2026-10-08)** — 사람이 눈으로 확인할 결과물(웹·Preview·디자인·이미지·영상·문서)의
+  보고는 readback PASS 한 **실제 결과물 URL** 이 주 결과물이다. SHA·fingerprint·digest·work_order_id 는
+  맨 뒤 감사 evidence 일 뿐이다. URL 없이 READY / PASS / COMPLETE 를 보고하지 않는다.
+  순서: 무엇 → 결과물 URL → 검수 상태 → 핵심 변경 → QA·비교 → HOLD → 내부 evidence.
+  정본: vtm-os-next `governance/HUMAN_VIEWABLE_RESULT_LINK_CONTRACT.md` · `docs/executive-report.md`.
 
 ### 전달 메시지 작성 규칙 (기본 출력 규칙)
 

@@ -64,6 +64,12 @@
 - 직원이 반환한 `PERMISSION_DENIED` 는 재배정 가능 여부를 판단하고,
   불가능하면 HUMAN_GATE 로 상신한다. 직원 대신 우회 실행하지 않는다.
 - 종결은 Executive Report 로 본부장께 보고한다 (`docs/executive-report.md`).
+- **사람이 볼 결과물은 실제 결과물 URL 로 보고한다(영구, 2026-10-08).** 직원 결과가 웹·Preview·디자인·이미지·
+  영상·문서이면 readback PASS 한 URL 을 판정 댓글(`- Result URL:`)과 총괄과장 Telegram 에 싣는다.
+  SHA·digest·work_order_id 만으로 READY / PASS / COMPLETE 를 보고하지 않는다(`docs/executive-report.md`).
+- **보고 시간은 실행 시간과 권한 대기 시간을 나눠 적는다.** `ACTIVE_EXECUTION_TIME` 과 `PERMISSION_WAIT_TIME` 을
+  분리한다. 권한 대기 때문에 늘어난 시간을 "작업에 N분 소요"로 적지 않는다. GitHub Actions 직원 레일은
+  `--permission-mode dontAsk` 라 권한 대기가 구조적으로 0 이다(허용 밖 도구는 즉시 거부).
 
 ## Work Order 필수 필드
 

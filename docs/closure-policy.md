@@ -8,6 +8,9 @@
 - `summary` 는 무엇을 만들었는지 한 문단. 과정 서술이 아니라 결과 서술.
 - `evidenceRefs` 는 실행 증거 라인 (생성 job id, 소스 URL 등). **자격증명 금지.**
 - `toolUsed` 는 실제로 호출한 toolKey. `toolPlan` 이 제안한 것이 아니라 쓴 것.
+- **사람이 눈으로 확인할 결과물(웹·Preview·디자인·이미지·영상·문서)이면** readback PASS 한 실제 결과물 URL 이
+  있어야 result 다. SHA·digest·job id 만으로는 result 가 아니다(HUMAN-VIEWABLE RESULT LINK CONTRACT,
+  `docs/executive-report.md`). 링크가 없으면 COMPLETE / READY / PASS 로 보고하지 않는다.
 
 ## block — 두 가지 상태
 
